@@ -15,11 +15,14 @@ import (
 
 type IFsDB interface {
 	Init() error
+	Drop() error
+
 	CreateFolder(name string, data interface{}, path ...string) error
 	GetFolder(name string, path ...string) (*entity.FolderInfo, error)
 	MoveFolder(oldName, newName string, path ...string) error
 	UpdateFolder(name string, data interface{}, path ...string) error
 	DeleteFolder(name string, path ...string) error
+	DuplicateFolder(srcName, dstName string, path ...string) error
 }
 type FsDB struct {
 	root string
@@ -100,6 +103,27 @@ func (db *FsDB) Init() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+func (db *FsDB) Drop() error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	// Check if db folder exist
+	isExist, err := fsutils.IsFolderExist(db.root)
+	if err != nil {
+		return err
+	}
+	if !isExist {
+		return nil
+	}
+
+	// Remove db folder
+	err = os.RemoveAll(db.root)
+	if err != nil {
+		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+	}
+
 	return nil
 }
 
@@ -220,6 +244,47 @@ func (db *FsDB) DeleteFolder(name string, path ...string) error {
 	err = os.RemoveAll(fullPath)
 	if err != nil {
 		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+	}
+
+	return nil
+}
+func (db *FsDB) DuplicateFolder(srcName, dstName string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	// Check if source folder exist
+	fullSrcPath, err := db.isFolderExist(srcName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Check if destination folder not exist
+	fullDstPath, err := db.isFolderNotExist(dstName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Copy folder
+	err = fsutils.CopyFolder(fullSrcPath, fullDstPath)
+	if err != nil {
+		return err
+	}
+
+	// Get info from file
+	info, err := fsutils.GetInfo(fullDstPath)
+	if err != nil {
+		return err
+	}
+
+	info.Id = utils.NameToID(dstName)
+	info.Name = dstName
+	info.CreatedAt = utils.Allocate(time.Now())
+	info.UpdatedAt = nil
+
+	// Update info file
+	err = fsutils.CreateInfo(fullDstPath, info)
+	if err != nil {
+		return err
 	}
 
 	return nil
