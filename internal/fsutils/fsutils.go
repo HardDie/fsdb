@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/otiai10/copy"
+
 	"github.com/HardDie/fsdb/internal/entity"
 	"github.com/HardDie/fsdb/internal/fsdberror"
-	"github.com/otiai10/copy"
 )
 
 const (
@@ -57,6 +58,13 @@ func MoveFolder(oldPath, newPath string) error {
 }
 func CopyFolder(srcPath, dstPath string) error {
 	err := copy.Copy(srcPath, dstPath)
+	if err != nil {
+		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+	}
+	return nil
+}
+func RemoveFolder(path string) error {
+	err := os.RemoveAll(path)
 	if err != nil {
 		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
 	}

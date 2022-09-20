@@ -1,11 +1,8 @@
 package fsdb
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/HardDie/fsdb/internal/entity"
 	"github.com/HardDie/fsdb/internal/fsdberror"
@@ -21,13 +18,18 @@ type IFsDB interface {
 	GetFolder(name string, path ...string) (*entity.FolderInfo, error)
 	MoveFolder(oldName, newName string, path ...string) error
 	UpdateFolder(name string, data interface{}, path ...string) error
-	DeleteFolder(name string, path ...string) error
+	RemoveFolder(name string, path ...string) error
 	DuplicateFolder(srcName, dstName string, path ...string) error
 }
 type FsDB struct {
 	root string
 	rwm  sync.RWMutex
 }
+
+var (
+	// validate interface
+	_ IFsDB = &FsDB{}
+)
 
 func NewFsDB(root string) IFsDB {
 	return &FsDB{
@@ -119,9 +121,9 @@ func (db *FsDB) Drop() error {
 	}
 
 	// Remove db folder
-	err = os.RemoveAll(db.root)
+	err = fsutils.RemoveFolder(db.root)
 	if err != nil {
-		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+		return err
 	}
 
 	return nil
@@ -190,9 +192,7 @@ func (db *FsDB) MoveFolder(oldName, newName string, path ...string) error {
 		return err
 	}
 
-	info.Id = utils.NameToID(newName)
-	info.Name = newName
-	info.UpdatedAt = utils.Allocate(time.Now())
+	info.SetName(newName).UpdatedNow()
 
 	// Update info file
 	err = fsutils.CreateInfo(fullOldPath, info)
@@ -217,12 +217,10 @@ func (db *FsDB) UpdateFolder(name string, data interface{}, path ...string) erro
 		return err
 	}
 
-	dataJson, err := json.Marshal(data)
+	err = info.UpdateData(data)
 	if err != nil {
-		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+		return err
 	}
-	info.Data = dataJson
-	info.UpdatedAt = utils.Allocate(time.Now())
 
 	// Update info file
 	err = fsutils.CreateInfo(fullPath, info)
@@ -232,7 +230,7 @@ func (db *FsDB) UpdateFolder(name string, data interface{}, path ...string) erro
 
 	return nil
 }
-func (db *FsDB) DeleteFolder(name string, path ...string) error {
+func (db *FsDB) RemoveFolder(name string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -241,9 +239,9 @@ func (db *FsDB) DeleteFolder(name string, path ...string) error {
 		return err
 	}
 
-	err = os.RemoveAll(fullPath)
+	err = fsutils.RemoveFolder(fullPath)
 	if err != nil {
-		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+		return err
 	}
 
 	return nil
@@ -276,10 +274,7 @@ func (db *FsDB) DuplicateFolder(srcName, dstName string, path ...string) error {
 		return err
 	}
 
-	info.Id = utils.NameToID(dstName)
-	info.Name = dstName
-	info.CreatedAt = utils.Allocate(time.Now())
-	info.UpdatedAt = nil
+	info.SetName(dstName).FlushTime()
 
 	// Update info file
 	err = fsutils.CreateInfo(fullDstPath, info)
