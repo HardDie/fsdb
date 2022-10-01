@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/HardDie/fsentry/internal/fsdberror"
+	"github.com/HardDie/fsentry/internal/entry_error"
 	"github.com/HardDie/fsentry/internal/utils"
 )
 
@@ -43,7 +43,7 @@ func (i *FolderInfo) FlushTime() *FolderInfo {
 func (i *FolderInfo) UpdateData(data interface{}) error {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
-		return fsdberror.Wrap(err, fsdberror.ErrorInternal)
+		return entry_error.Wrap(err, entry_error.ErrorInternal)
 	}
 	i.Data = dataJson
 	i.UpdatedAt = utils.Allocate(time.Now())

@@ -1,4 +1,4 @@
-package fsdberror
+package entry_error
 
 import (
 	"fmt"

@@ -5,12 +5,12 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/internal/fsdberror"
+	"github.com/HardDie/fsentry/internal/entry_error"
 	"github.com/HardDie/fsentry/internal/fsutils"
 	"github.com/HardDie/fsentry/internal/utils"
 )
 
-type IFsDB interface {
+type IFSEntry interface {
 	Init() error
 	Drop() error
 
@@ -21,75 +21,25 @@ type IFsDB interface {
 	RemoveFolder(name string, path ...string) error
 	DuplicateFolder(srcName, dstName string, path ...string) error
 }
-type FsDB struct {
+type FSEntry struct {
 	root string
 	rwm  sync.RWMutex
 }
 
 var (
 	// validate interface
-	_ IFsDB = &FsDB{}
+	_ IFSEntry = &FSEntry{}
 )
 
-func NewFsDB(root string) IFsDB {
-	return &FsDB{
+func NewFSEntry(root string) IFSEntry {
+	return &FSEntry{
 		root: root,
 	}
 }
 
-func (db *FsDB) buildPath(id string, path ...string) string {
-	pathSlice := append([]string{db.root}, path...)
-	return filepath.Join(append(pathSlice, id)...)
-}
-func (db *FsDB) isFolderExist(name string, path ...string) (string, error) {
-	id := utils.NameToID(name)
-	if id == "" {
-		return "", fsdberror.ErrorBadFolderName
-	}
+// Basic
 
-	fullPath := db.buildPath(id, path...)
-
-	// Check if root folder exist
-	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsdberror.ErrorBadPath
-	}
-
-	// Check if destination folder exist
-	isExist, err = fsutils.IsFolderExist(fullPath)
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsdberror.ErrorNotExist
-	}
-
-	return fullPath, nil
-}
-func (db *FsDB) isFolderNotExist(name string, path ...string) (string, error) {
-	id := utils.NameToID(name)
-	if id == "" {
-		return "", fsdberror.ErrorBadFolderName
-	}
-
-	fullPath := db.buildPath(id, path...)
-
-	// Check if destination folder exist
-	isExist, err := fsutils.IsFolderExist(fullPath)
-	if err != nil {
-		return "", err
-	}
-	if isExist {
-		return "", fsdberror.ErrorExist
-	}
-
-	return fullPath, nil
-}
-
-func (db *FsDB) Init() error {
+func (db *FSEntry) Init() error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -107,7 +57,7 @@ func (db *FsDB) Init() error {
 	}
 	return nil
 }
-func (db *FsDB) Drop() error {
+func (db *FSEntry) Drop() error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -129,7 +79,9 @@ func (db *FsDB) Drop() error {
 	return nil
 }
 
-func (db *FsDB) CreateFolder(name string, data interface{}, path ...string) error {
+// Folder
+
+func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -153,7 +105,7 @@ func (db *FsDB) CreateFolder(name string, data interface{}, path ...string) erro
 
 	return nil
 }
-func (db *FsDB) GetFolder(name string, path ...string) (*entity.FolderInfo, error) {
+func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
 
@@ -170,7 +122,7 @@ func (db *FsDB) GetFolder(name string, path ...string) (*entity.FolderInfo, erro
 
 	return info, nil
 }
-func (db *FsDB) MoveFolder(oldName, newName string, path ...string) error {
+func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -202,7 +154,7 @@ func (db *FsDB) MoveFolder(oldName, newName string, path ...string) error {
 
 	return fsutils.MoveFolder(fullOldPath, fullNewPath)
 }
-func (db *FsDB) UpdateFolder(name string, data interface{}, path ...string) error {
+func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -230,7 +182,7 @@ func (db *FsDB) UpdateFolder(name string, data interface{}, path ...string) erro
 
 	return nil
 }
-func (db *FsDB) RemoveFolder(name string, path ...string) error {
+func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -246,7 +198,7 @@ func (db *FsDB) RemoveFolder(name string, path ...string) error {
 
 	return nil
 }
-func (db *FsDB) DuplicateFolder(srcName, dstName string, path ...string) error {
+func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
@@ -283,4 +235,58 @@ func (db *FsDB) DuplicateFolder(srcName, dstName string, path ...string) error {
 	}
 
 	return nil
+}
+
+// util
+
+func (db *FSEntry) buildPath(id string, path ...string) string {
+	pathSlice := append([]string{db.root}, path...)
+	return filepath.Join(append(pathSlice, id)...)
+}
+func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
+	id := utils.NameToID(name)
+	if id == "" {
+		return "", entry_error.ErrorBadFolderName
+	}
+
+	fullPath := db.buildPath(id, path...)
+
+	// Check if root folder exist
+	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	if err != nil {
+		return "", err
+	}
+	if !isExist {
+		return "", entry_error.ErrorBadPath
+	}
+
+	// Check if destination folder exist
+	isExist, err = fsutils.IsFolderExist(fullPath)
+	if err != nil {
+		return "", err
+	}
+	if !isExist {
+		return "", entry_error.ErrorNotExist
+	}
+
+	return fullPath, nil
+}
+func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error) {
+	id := utils.NameToID(name)
+	if id == "" {
+		return "", entry_error.ErrorBadFolderName
+	}
+
+	fullPath := db.buildPath(id, path...)
+
+	// Check if destination folder exist
+	isExist, err := fsutils.IsFolderExist(fullPath)
+	if err != nil {
+		return "", err
+	}
+	if isExist {
+		return "", entry_error.ErrorExist
+	}
+
+	return fullPath, nil
 }
