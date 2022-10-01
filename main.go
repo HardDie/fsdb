@@ -23,7 +23,10 @@ type IFSEntry interface {
 
 	CreateEntry(name string, data interface{}, path ...string) error
 	GetEntry(name string, path ...string) (*entity.Entry, error)
+	MoveEntry(oldName, newName string, path ...string) error
+	UpdateEntry(name string, data interface{}, path ...string) error
 	RemoveEntry(name string, path ...string) error
+	DuplicateEntry(srcName, dstName string, path ...string) error
 }
 type FSEntry struct {
 	root string
@@ -277,6 +280,72 @@ func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) 
 
 	return entry, nil
 }
+func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	// Check if source entry exist
+	fullOldPath, err := db.isEntryExist(oldName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Check if destination entry not exist
+	fullNewPath, err := db.isEntryNotExist(newName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Read old entry
+	entry, err := fsutils.GetEntry(fullOldPath)
+	if err != nil {
+		return err
+	}
+
+	entry.SetName(newName).UpdatedNow()
+
+	// Remove old entry
+	err = fsutils.RemoveEntry(fullOldPath)
+	if err != nil {
+		return err
+	}
+
+	// Create new entry
+	err = fsutils.CreateEntry(fullNewPath, entry)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isEntryExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	// Get entry from file
+	entry, err := fsutils.GetEntry(fullPath)
+	if err != nil {
+		return err
+	}
+
+	err = entry.UpdateData(data)
+	if err != nil {
+		return err
+	}
+
+	// Update entry file
+	err = fsutils.CreateEntry(fullPath, entry)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func (db *FSEntry) RemoveEntry(name string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
@@ -287,6 +356,38 @@ func (db *FSEntry) RemoveEntry(name string, path ...string) error {
 	}
 
 	err = fsutils.RemoveEntry(fullPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	// Check if source entry exist
+	fullSrcPath, err := db.isEntryExist(srcName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Check if destination entry not exist
+	fullDstPath, err := db.isEntryNotExist(dstName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Get entry from file
+	entry, err := fsutils.GetEntry(fullSrcPath)
+	if err != nil {
+		return err
+	}
+
+	entry.SetName(dstName).FlushTime()
+
+	// Create entry file
+	err = fsutils.CreateEntry(fullDstPath, entry)
 	if err != nil {
 		return err
 	}
@@ -347,7 +448,6 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 
 	return fullPath, nil
 }
-
 func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
