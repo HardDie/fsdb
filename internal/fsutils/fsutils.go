@@ -7,8 +7,8 @@ import (
 
 	"github.com/otiai10/copy"
 
-	"github.com/HardDie/fsdb/internal/entity"
-	"github.com/HardDie/fsdb/internal/fsdberror"
+	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/fsdberror"
 )
 
 const (

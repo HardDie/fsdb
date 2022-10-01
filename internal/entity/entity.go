@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/HardDie/fsdb/internal/fsdberror"
-	"github.com/HardDie/fsdb/internal/utils"
+	"github.com/HardDie/fsentry/internal/fsdberror"
+	"github.com/HardDie/fsentry/internal/utils"
 )
 
 type FolderInfo struct {

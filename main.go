@@ -1,13 +1,13 @@
-package fsdb
+package fsentry
 
 import (
 	"path/filepath"
 	"sync"
 
-	"github.com/HardDie/fsdb/internal/entity"
-	"github.com/HardDie/fsdb/internal/fsdberror"
-	"github.com/HardDie/fsdb/internal/fsutils"
-	"github.com/HardDie/fsdb/internal/utils"
+	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/fsdberror"
+	"github.com/HardDie/fsentry/internal/fsutils"
+	"github.com/HardDie/fsentry/internal/utils"
 )
 
 type IFsDB interface {
