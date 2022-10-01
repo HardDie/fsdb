@@ -71,7 +71,59 @@ func RemoveFolder(path string) error {
 	return nil
 }
 
-func CreateInfo(path string, data interface{}) error {
+func IsEntryExist(path string) (isExist bool, err error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// entry not exist
+			return false, nil
+		}
+		// other error
+		return false, entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+
+	// check if it is not a folder
+	if stat.IsDir() {
+		return false, entry_error.ErrorBadPath
+	}
+
+	// entry exists
+	return true, nil
+}
+func CreateEntry(path string, entry *entity.Entry) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+
+	err = json.NewEncoder(file).Encode(entry)
+	if err != nil {
+		return entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+	return nil
+}
+func GetEntry(path string) (*entity.Entry, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+
+	info := &entity.Entry{}
+	err = json.NewDecoder(file).Decode(info)
+	if err != nil {
+		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+	return info, nil
+}
+func RemoveEntry(path string) error {
+	err := os.Remove(path)
+	if err != nil {
+		return entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+	return nil
+}
+
+func CreateInfo(path string, data *entity.FolderInfo) error {
 	file, err := os.Create(filepath.Join(path, InfoFile))
 	if err != nil {
 		return entry_error.Wrap(err, entry_error.ErrorInternal)

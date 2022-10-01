@@ -5,11 +5,11 @@ import (
 )
 
 var (
-	ErrorBadFolderName = fmt.Errorf("bad folder name")
-	ErrorBadPath       = fmt.Errorf("bad path")
-	ErrorExist         = fmt.Errorf("object exist")
-	ErrorNotExist      = fmt.Errorf("object not exist")
-	ErrorInternal      = fmt.Errorf("internal error")
+	ErrorBadName  = fmt.Errorf("bad name")
+	ErrorBadPath  = fmt.Errorf("bad path")
+	ErrorExist    = fmt.Errorf("object exist")
+	ErrorNotExist = fmt.Errorf("object not exist")
+	ErrorInternal = fmt.Errorf("internal error")
 )
 
 func Wrap(err, localErr error) error {

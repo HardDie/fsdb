@@ -20,6 +20,10 @@ type IFSEntry interface {
 	UpdateFolder(name string, data interface{}, path ...string) error
 	RemoveFolder(name string, path ...string) error
 	DuplicateFolder(srcName, dstName string, path ...string) error
+
+	CreateEntry(name string, data interface{}, path ...string) error
+	GetEntry(name string, path ...string) (*entity.Entry, error)
+	RemoveEntry(name string, path ...string) error
 }
 type FSEntry struct {
 	root string
@@ -237,6 +241,59 @@ func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) erro
 	return nil
 }
 
+// Entry
+
+func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isEntryNotExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	entry := entity.NewEntry(name, data)
+	err = fsutils.CreateEntry(fullPath, entry)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) {
+	db.rwm.RLock()
+	defer db.rwm.RUnlock()
+
+	fullPath, err := db.isEntryExist(name, path...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get info from file
+	entry, err := fsutils.GetEntry(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return entry, nil
+}
+func (db *FSEntry) RemoveEntry(name string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isEntryExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	err = fsutils.RemoveEntry(fullPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // util
 
 func (db *FSEntry) buildPath(id string, path ...string) string {
@@ -246,7 +303,7 @@ func (db *FSEntry) buildPath(id string, path ...string) string {
 func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
-		return "", entry_error.ErrorBadFolderName
+		return "", entry_error.ErrorBadName
 	}
 
 	fullPath := db.buildPath(id, path...)
@@ -274,13 +331,63 @@ func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
-		return "", entry_error.ErrorBadFolderName
+		return "", entry_error.ErrorBadName
 	}
 
 	fullPath := db.buildPath(id, path...)
 
 	// Check if destination folder exist
 	isExist, err := fsutils.IsFolderExist(fullPath)
+	if err != nil {
+		return "", err
+	}
+	if isExist {
+		return "", entry_error.ErrorExist
+	}
+
+	return fullPath, nil
+}
+
+func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
+	id := utils.NameToID(name)
+	if id == "" {
+		return "", entry_error.ErrorBadName
+	}
+	id += ".json"
+
+	fullPath := db.buildPath(id, path...)
+
+	// Check if root folder exist
+	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	if err != nil {
+		return "", err
+	}
+	if !isExist {
+		return "", entry_error.ErrorBadPath
+	}
+
+	// Check if destination entry exist
+	isExist, err = fsutils.IsEntryExist(fullPath)
+	if err != nil {
+		return "", err
+	}
+	if !isExist {
+		return "", entry_error.ErrorNotExist
+	}
+
+	return fullPath, nil
+}
+func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) {
+	id := utils.NameToID(name)
+	if id == "" {
+		return "", entry_error.ErrorBadName
+	}
+	id += ".json"
+
+	fullPath := db.buildPath(id, path...)
+
+	// Check if destination entry exist
+	isExist, err := fsutils.IsEntryExist(fullPath)
 	if err != nil {
 		return "", err
 	}
