@@ -35,7 +35,14 @@ func TestFolder(t *testing.T) {
 			t.Fatal("Bad path for folder")
 		}
 
+		// Create directory
 		err = db.CreateFolder("some_folder", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Create subdirectory
+		err = db.CreateFolder("some_inner_folder", nil, "some_folder")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -76,7 +83,7 @@ func TestFolder(t *testing.T) {
 		// Try to get from bad path
 		_, err = db.GetFolder("not_exist_folder", "bad_path")
 		if !errors.Is(err, entry_error.ErrorBadPath) {
-			t.Fatal("Folder not exist")
+			t.Fatal("Bad path")
 		}
 
 		err = db.CreateFolder("some_folder", nil)
@@ -84,12 +91,12 @@ func TestFolder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		entry, err := db.GetFolder("some_folder")
+		folder, err := db.GetFolder("some_folder")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if entry.Name != "some_folder" {
+		if folder.Name != "some_folder" {
 			t.Fatal("Bad name")
 		}
 
@@ -186,6 +193,16 @@ func TestFolder(t *testing.T) {
 			t.Fatal("Bad path")
 		}
 
+		err = db.CreateFolder("some_folder", 5)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.UpdateFolder("some_folder", 15)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		err = db.Drop()
 		if err != nil {
 			t.Fatal(err)
@@ -227,6 +244,246 @@ func TestFolder(t *testing.T) {
 		err = db.RemoveFolder("some_folder")
 		if !errors.Is(err, entry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestEntry(t *testing.T) {
+	folderDB := NewFSEntry("test")
+	err := folderDB.Init()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("create", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_entry_create")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to create entry with bad name
+		err = db.CreateEntry("", nil)
+		if !errors.Is(err, entry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to create entry in not exist subdirectory
+		err = db.CreateEntry("bad_path", nil, "bad")
+		if !errors.Is(err, entry_error.ErrorBadPath) {
+			t.Fatal("Bad path for folder")
+		}
+
+		// Create entry
+		err = db.CreateEntry("some_entry", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to create duplicate
+		err = db.CreateEntry("some_entry", nil)
+		if !errors.Is(err, entry_error.ErrorExist) {
+			t.Fatal("Entry already exist")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("get", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_entry_get")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to get bad name
+		_, err = db.GetEntry("")
+		if !errors.Is(err, entry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to get not exist entry
+		_, err = db.GetEntry("not_exist_entry")
+		if !errors.Is(err, entry_error.ErrorNotExist) {
+			t.Fatal("Entry not exist")
+		}
+
+		// Try to get from bad path
+		_, err = db.GetEntry("not_exist_entry", "bad_path")
+		if !errors.Is(err, entry_error.ErrorBadPath) {
+			t.Fatal("Bad path")
+		}
+
+		err = db.CreateEntry("some_entry", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		entry, err := db.GetEntry("some_entry")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if entry.Name != "some_entry" {
+			t.Fatal("Bad name")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("move", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_entry_move")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to move not exist entry
+		err = db.MoveEntry("not_exist", "new_not_exist")
+		if !errors.Is(err, entry_error.ErrorNotExist) {
+			t.Fatal("Entry not exist")
+		}
+
+		// Try to move bad path
+		err = db.MoveEntry("not_exist", "new_not_exist", "bad_path")
+		if !errors.Is(err, entry_error.ErrorBadPath) {
+			t.Fatal("Bad path")
+		}
+
+		err = db.CreateEntry("first_entry", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.CreateEntry("second_entry", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to move bad name
+		err = db.MoveEntry("", "new_not_exist")
+		if !errors.Is(err, entry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to move bad name
+		err = db.MoveEntry("first_entry", "")
+		if !errors.Is(err, entry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to move into exist folder
+		err = db.MoveEntry("first_entry", "second_entry")
+		if !errors.Is(err, entry_error.ErrorExist) {
+			t.Fatal("Entry already exist")
+		}
+
+		err = db.MoveEntry("first_entry", "new_first_entry")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("update", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_entry_update")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to update bad name
+		err = db.UpdateEntry("", nil)
+		if !errors.Is(err, entry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to update not exist entry
+		err = db.UpdateEntry("not_exist_entry", nil)
+		if !errors.Is(err, entry_error.ErrorNotExist) {
+			t.Fatal("Entry not exist")
+		}
+
+		// Try to update bad path entry
+		err = db.UpdateEntry("not_exist_entry", nil, "bad_path")
+		if !errors.Is(err, entry_error.ErrorBadPath) {
+			t.Fatal("Bad path")
+		}
+
+		err = db.CreateEntry("some_entry", 5)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.UpdateEntry("some_entry", 15)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("remove", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_entry_remove")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to remove bad name
+		err = db.RemoveEntry("")
+		if !errors.Is(err, entry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to remove not exist entry
+		err = db.RemoveEntry("not_exist_entry")
+		if !errors.Is(err, entry_error.ErrorNotExist) {
+			t.Fatal("Entry not exist")
+		}
+
+		err = db.CreateEntry("some_entry", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.RemoveEntry("some_entry")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to remove twice
+		err = db.RemoveEntry("some_entry")
+		if !errors.Is(err, entry_error.ErrorNotExist) {
+			t.Fatal("Entry not exist")
 		}
 
 		err = db.Drop()
