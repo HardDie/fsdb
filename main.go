@@ -437,8 +437,17 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 
 	fullPath := db.buildPath(id, path...)
 
+	// Check if root folder exist
+	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	if err != nil {
+		return "", err
+	}
+	if !isExist {
+		return "", entry_error.ErrorBadPath
+	}
+
 	// Check if destination folder exist
-	isExist, err := fsutils.IsFolderExist(fullPath)
+	isExist, err = fsutils.IsFolderExist(fullPath)
 	if err != nil {
 		return "", err
 	}
