@@ -16,6 +16,38 @@ const (
 	InfoFile = ".info.json"
 )
 
+func List(path string) (*entity.List, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+
+	files, err := f.Readdir(0)
+	if err != nil {
+		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+	}
+
+	res := &entity.List{}
+	for _, file := range files {
+		name := file.Name()
+
+		if name[0] == '.' {
+			// skip hidden files
+			continue
+		}
+
+		if file.IsDir() {
+			res.Folders = append(res.Folders, file.Name())
+		} else {
+			if filepath.Ext(name) == ".json" {
+				res.Entries = append(res.Entries, name[0:len(name)-5])
+			}
+		}
+	}
+
+	return res, nil
+}
+
 func IsFolderExist(path string) (isExist bool, err error) {
 	stat, err := os.Stat(path)
 	if err != nil {

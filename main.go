@@ -13,6 +13,7 @@ import (
 type IFSEntry interface {
 	Init() error
 	Drop() error
+	List(path ...string) (*entity.List, error)
 
 	CreateFolder(name string, data interface{}, path ...string) error
 	GetFolder(name string, path ...string) (*entity.FolderInfo, error)
@@ -84,6 +85,13 @@ func (db *FSEntry) Drop() error {
 	}
 
 	return nil
+}
+func (db *FSEntry) List(path ...string) (*entity.List, error) {
+	db.rwm.RLock()
+	defer db.rwm.RUnlock()
+
+	fullPath := db.buildPath("", path...)
+	return fsutils.List(fullPath)
 }
 
 // Folder
