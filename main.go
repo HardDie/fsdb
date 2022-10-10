@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/internal/entry_error"
 	"github.com/HardDie/fsentry/internal/fsutils"
 	"github.com/HardDie/fsentry/internal/utils"
+	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 type IFSEntry interface {
@@ -412,7 +412,7 @@ func (db *FSEntry) buildPath(id string, path ...string) string {
 func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
-		return "", entry_error.ErrorBadName
+		return "", fsentry_error.ErrorBadName
 	}
 
 	fullPath := db.buildPath(id, path...)
@@ -423,7 +423,7 @@ func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 		return "", err
 	}
 	if !isExist {
-		return "", entry_error.ErrorBadPath
+		return "", fsentry_error.ErrorBadPath
 	}
 
 	// Check if destination folder exist
@@ -432,7 +432,7 @@ func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 		return "", err
 	}
 	if !isExist {
-		return "", entry_error.ErrorNotExist
+		return "", fsentry_error.ErrorNotExist
 	}
 
 	return fullPath, nil
@@ -440,7 +440,7 @@ func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
-		return "", entry_error.ErrorBadName
+		return "", fsentry_error.ErrorBadName
 	}
 
 	fullPath := db.buildPath(id, path...)
@@ -451,7 +451,7 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 		return "", err
 	}
 	if !isExist {
-		return "", entry_error.ErrorBadPath
+		return "", fsentry_error.ErrorBadPath
 	}
 
 	// Check if destination folder exist
@@ -460,7 +460,7 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 		return "", err
 	}
 	if isExist {
-		return "", entry_error.ErrorExist
+		return "", fsentry_error.ErrorExist
 	}
 
 	return fullPath, nil
@@ -468,7 +468,7 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
-		return "", entry_error.ErrorBadName
+		return "", fsentry_error.ErrorBadName
 	}
 	id += ".json"
 
@@ -480,7 +480,7 @@ func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 		return "", err
 	}
 	if !isExist {
-		return "", entry_error.ErrorBadPath
+		return "", fsentry_error.ErrorBadPath
 	}
 
 	// Check if destination entry exist
@@ -489,7 +489,7 @@ func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 		return "", err
 	}
 	if !isExist {
-		return "", entry_error.ErrorNotExist
+		return "", fsentry_error.ErrorNotExist
 	}
 
 	return fullPath, nil
@@ -497,7 +497,7 @@ func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
-		return "", entry_error.ErrorBadName
+		return "", fsentry_error.ErrorBadName
 	}
 	id += ".json"
 
@@ -509,7 +509,7 @@ func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) 
 		return "", err
 	}
 	if !isExist {
-		return "", entry_error.ErrorBadPath
+		return "", fsentry_error.ErrorBadPath
 	}
 
 	// Check if destination entry exist
@@ -518,7 +518,7 @@ func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) 
 		return "", err
 	}
 	if isExist {
-		return "", entry_error.ErrorExist
+		return "", fsentry_error.ErrorExist
 	}
 
 	return fullPath, nil

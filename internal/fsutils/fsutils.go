@@ -8,7 +8,7 @@ import (
 	"github.com/otiai10/copy"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/internal/entry_error"
+	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 const (
@@ -19,12 +19,12 @@ const (
 func List(path string) (*entity.List, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	files, err := f.Readdir(0)
 	if err != nil {
-		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	res := &entity.List{}
@@ -56,12 +56,12 @@ func IsFolderExist(path string) (isExist bool, err error) {
 			return false, nil
 		}
 		// other error
-		return false, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	// check if it is a folder
 	if !stat.IsDir() {
-		return false, entry_error.ErrorBadPath
+		return false, fsentry_error.ErrorBadPath
 	}
 
 	// folder exists
@@ -70,35 +70,35 @@ func IsFolderExist(path string) (isExist bool, err error) {
 func CreateFolder(path string) error {
 	err := os.Mkdir(path, DirPerm)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
 func CreateAllFolder(path string) error {
 	err := os.MkdirAll(path, DirPerm)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
 func MoveFolder(oldPath, newPath string) error {
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
 func CopyFolder(srcPath, dstPath string) error {
 	err := copy.Copy(srcPath, dstPath)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
 func RemoveFolder(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
@@ -111,12 +111,12 @@ func IsEntryExist(path string) (isExist bool, err error) {
 			return false, nil
 		}
 		// other error
-		return false, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	// check if it is not a folder
 	if stat.IsDir() {
-		return false, entry_error.ErrorBadPath
+		return false, fsentry_error.ErrorBadPath
 	}
 
 	// entry exists
@@ -125,32 +125,32 @@ func IsEntryExist(path string) (isExist bool, err error) {
 func CreateEntry(path string, entry *entity.Entry) error {
 	file, err := os.Create(path)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	err = json.NewEncoder(file).Encode(entry)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
 func GetEntry(path string) (*entity.Entry, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	info := &entity.Entry{}
 	err = json.NewDecoder(file).Decode(info)
 	if err != nil {
-		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return info, nil
 }
 func RemoveEntry(path string) error {
 	err := os.Remove(path)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
@@ -158,25 +158,25 @@ func RemoveEntry(path string) error {
 func CreateInfo(path string, data *entity.FolderInfo) error {
 	file, err := os.Create(filepath.Join(path, InfoFile))
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	err = json.NewEncoder(file).Encode(data)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
 func GetInfo(path string) (*entity.FolderInfo, error) {
 	file, err := os.Open(filepath.Join(path, InfoFile))
 	if err != nil {
-		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
 	info := &entity.FolderInfo{}
 	err = json.NewDecoder(file).Decode(info)
 	if err != nil {
-		return nil, entry_error.Wrap(err, entry_error.ErrorInternal)
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return info, nil
 }

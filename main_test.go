@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/HardDie/fsentry/internal/entry_error"
+	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 func TestFolder(t *testing.T) {
@@ -25,13 +25,13 @@ func TestFolder(t *testing.T) {
 
 		// Try to create folder with empty name
 		err = db.CreateFolder("", nil)
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to create folder in not exist subdirectory
 		err = db.CreateFolder("bad_path", nil, "not_exist_folder")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path for folder")
 		}
 
@@ -49,7 +49,7 @@ func TestFolder(t *testing.T) {
 
 		// Try to create duplicate
 		err = db.CreateFolder("some_folder", nil)
-		if !errors.Is(err, entry_error.ErrorExist) {
+		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Folder already exist")
 		}
 
@@ -70,19 +70,19 @@ func TestFolder(t *testing.T) {
 
 		// Try to get bad name
 		_, err = db.GetFolder("")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to get not exist folder
 		_, err = db.GetFolder("not_exist_folder")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
 		// Try to get from bad path
 		_, err = db.GetFolder("not_exist_folder", "bad_path")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
@@ -117,13 +117,13 @@ func TestFolder(t *testing.T) {
 
 		// Try to move not exist folder
 		err = db.MoveFolder("not_exist", "new_not_exist")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
 		// Try to move bad path
 		err = db.MoveFolder("not_exist", "new_not_exist", "bad_path")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
@@ -139,19 +139,19 @@ func TestFolder(t *testing.T) {
 
 		// Try to move bad name
 		err = db.MoveFolder("", "new_not_exist")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move bad name
 		err = db.MoveFolder("first_folder", "")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move into exist folder
 		err = db.MoveFolder("first_folder", "second_folder")
-		if !errors.Is(err, entry_error.ErrorExist) {
+		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Folder already exist")
 		}
 
@@ -177,19 +177,19 @@ func TestFolder(t *testing.T) {
 
 		// Try to update bad name
 		err = db.UpdateFolder("", nil)
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to update not exist folder
 		err = db.UpdateFolder("not_exist_folder", nil)
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
 		// Try to update bad path folder
 		err = db.UpdateFolder("not_exist_folder", nil, "bad_path")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
@@ -220,13 +220,13 @@ func TestFolder(t *testing.T) {
 
 		// Try to remove bad name
 		err = db.RemoveFolder("")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to remove not exist folder
 		err = db.RemoveFolder("not_exist_folder")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
@@ -242,7 +242,7 @@ func TestFolder(t *testing.T) {
 
 		// Try to remove twice
 		err = db.RemoveFolder("some_folder")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
@@ -271,13 +271,13 @@ func TestEntry(t *testing.T) {
 
 		// Try to create entry with bad name
 		err = db.CreateEntry("", nil)
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to create entry in not exist subdirectory
 		err = db.CreateEntry("bad_path", nil, "bad")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path for folder")
 		}
 
@@ -289,7 +289,7 @@ func TestEntry(t *testing.T) {
 
 		// Try to create duplicate
 		err = db.CreateEntry("some_entry", nil)
-		if !errors.Is(err, entry_error.ErrorExist) {
+		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Entry already exist")
 		}
 
@@ -310,19 +310,19 @@ func TestEntry(t *testing.T) {
 
 		// Try to get bad name
 		_, err = db.GetEntry("")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to get not exist entry
 		_, err = db.GetEntry("not_exist_entry")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 
 		// Try to get from bad path
 		_, err = db.GetEntry("not_exist_entry", "bad_path")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
@@ -357,13 +357,13 @@ func TestEntry(t *testing.T) {
 
 		// Try to move not exist entry
 		err = db.MoveEntry("not_exist", "new_not_exist")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 
 		// Try to move bad path
 		err = db.MoveEntry("not_exist", "new_not_exist", "bad_path")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
@@ -379,19 +379,19 @@ func TestEntry(t *testing.T) {
 
 		// Try to move bad name
 		err = db.MoveEntry("", "new_not_exist")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move bad name
 		err = db.MoveEntry("first_entry", "")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move into exist folder
 		err = db.MoveEntry("first_entry", "second_entry")
-		if !errors.Is(err, entry_error.ErrorExist) {
+		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Entry already exist")
 		}
 
@@ -417,19 +417,19 @@ func TestEntry(t *testing.T) {
 
 		// Try to update bad name
 		err = db.UpdateEntry("", nil)
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to update not exist entry
 		err = db.UpdateEntry("not_exist_entry", nil)
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 
 		// Try to update bad path entry
 		err = db.UpdateEntry("not_exist_entry", nil, "bad_path")
-		if !errors.Is(err, entry_error.ErrorBadPath) {
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
@@ -460,13 +460,13 @@ func TestEntry(t *testing.T) {
 
 		// Try to remove bad name
 		err = db.RemoveEntry("")
-		if !errors.Is(err, entry_error.ErrorBadName) {
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to remove not exist entry
 		err = db.RemoveEntry("not_exist_entry")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 
@@ -482,7 +482,7 @@ func TestEntry(t *testing.T) {
 
 		// Try to remove twice
 		err = db.RemoveEntry("some_entry")
-		if !errors.Is(err, entry_error.ErrorNotExist) {
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 

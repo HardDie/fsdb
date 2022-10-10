@@ -1,8 +1,6 @@
-package entry_error
+package fsentry_error
 
-import (
-	"fmt"
-)
+import "fmt"
 
 var (
 	ErrorBadName  = fmt.Errorf("bad name")

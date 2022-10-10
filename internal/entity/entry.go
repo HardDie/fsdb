@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/HardDie/fsentry/internal/entry_error"
 	"github.com/HardDie/fsentry/internal/utils"
+	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 type Entry struct {
@@ -43,7 +43,7 @@ func (i *Entry) FlushTime() *Entry {
 func (i *Entry) UpdateData(data interface{}) error {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
-		return entry_error.Wrap(err, entry_error.ErrorInternal)
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	i.Data = dataJson
 	i.UpdatedAt = utils.Allocate(time.Now())
