@@ -6,28 +6,29 @@ import (
 
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	"github.com/HardDie/fsentry/pkg/fsentry_types"
 )
 
 type FolderInfo struct {
-	Id        string          `json:"id"`
-	Name      string          `json:"name"`
-	CreatedAt *time.Time      `json:"createdAt"`
-	UpdatedAt *time.Time      `json:"updatedAt"`
-	Data      json.RawMessage `json:"data"`
+	Id        string                     `json:"id"`
+	Name      fsentry_types.QuotedString `json:"name"`
+	CreatedAt *time.Time                 `json:"createdAt"`
+	UpdatedAt *time.Time                 `json:"updatedAt"`
+	Data      json.RawMessage            `json:"data"`
 }
 
 func NewFolderInfo(name string, data interface{}) *FolderInfo {
 	dataJson, _ := json.Marshal(data)
 	return &FolderInfo{
 		Id:        utils.NameToID(name),
-		Name:      name,
+		Name:      fsentry_types.QuotedString(name),
 		CreatedAt: utils.Allocate(time.Now()),
 		Data:      dataJson,
 	}
 }
 
 func (i *FolderInfo) SetName(name string) *FolderInfo {
-	i.Name = name
+	i.Name = fsentry_types.QuotedString(name)
 	i.Id = utils.NameToID(name)
 	return i
 }

@@ -24,31 +24,31 @@ func TestFolder(t *testing.T) {
 		}
 
 		// Try to create folder with empty name
-		err = db.CreateFolder("", nil)
+		_, err = db.CreateFolder("", nil)
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to create folder in not exist subdirectory
-		err = db.CreateFolder("bad_path", nil, "not_exist_folder")
+		_, err = db.CreateFolder("bad_path", nil, "not_exist_folder")
 		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path for folder")
 		}
 
 		// Create directory
-		err = db.CreateFolder("some_folder", nil)
+		_, err = db.CreateFolder("some_folder", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Create subdirectory
-		err = db.CreateFolder("some_inner_folder", nil, "some_folder")
+		_, err = db.CreateFolder("some_inner_folder", nil, "some_folder")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Try to create duplicate
-		err = db.CreateFolder("some_folder", nil)
+		_, err = db.CreateFolder("some_folder", nil)
 		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Folder already exist")
 		}
@@ -86,7 +86,7 @@ func TestFolder(t *testing.T) {
 			t.Fatal("Bad path")
 		}
 
-		err = db.CreateFolder("some_folder", nil)
+		_, err = db.CreateFolder("some_folder", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -116,46 +116,46 @@ func TestFolder(t *testing.T) {
 		}
 
 		// Try to move not exist folder
-		err = db.MoveFolder("not_exist", "new_not_exist")
+		_, err = db.MoveFolder("not_exist", "new_not_exist")
 		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
 		// Try to move bad path
-		err = db.MoveFolder("not_exist", "new_not_exist", "bad_path")
+		_, err = db.MoveFolder("not_exist", "new_not_exist", "bad_path")
 		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
-		err = db.CreateFolder("first_folder", nil)
+		_, err = db.CreateFolder("first_folder", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = db.CreateFolder("second_folder", nil)
+		_, err = db.CreateFolder("second_folder", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Try to move bad name
-		err = db.MoveFolder("", "new_not_exist")
+		_, err = db.MoveFolder("", "new_not_exist")
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move bad name
-		err = db.MoveFolder("first_folder", "")
+		_, err = db.MoveFolder("first_folder", "")
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move into exist folder
-		err = db.MoveFolder("first_folder", "second_folder")
+		_, err = db.MoveFolder("first_folder", "second_folder")
 		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Folder already exist")
 		}
 
-		err = db.MoveFolder("first_folder", "new_first_folder")
+		_, err = db.MoveFolder("first_folder", "new_first_folder")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,29 +176,29 @@ func TestFolder(t *testing.T) {
 		}
 
 		// Try to update bad name
-		err = db.UpdateFolder("", nil)
+		_, err = db.UpdateFolder("", nil)
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to update not exist folder
-		err = db.UpdateFolder("not_exist_folder", nil)
+		_, err = db.UpdateFolder("not_exist_folder", nil)
 		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Folder not exist")
 		}
 
 		// Try to update bad path folder
-		err = db.UpdateFolder("not_exist_folder", nil, "bad_path")
+		_, err = db.UpdateFolder("not_exist_folder", nil, "bad_path")
 		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
-		err = db.CreateFolder("some_folder", 5)
+		_, err = db.CreateFolder("some_folder", 5)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = db.UpdateFolder("some_folder", 15)
+		_, err = db.UpdateFolder("some_folder", 15)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -230,7 +230,7 @@ func TestFolder(t *testing.T) {
 			t.Fatal("Folder not exist")
 		}
 
-		err = db.CreateFolder("some_folder", nil)
+		_, err = db.CreateFolder("some_folder", nil)
 		if err != nil {
 			t.Fatal(err)
 		}

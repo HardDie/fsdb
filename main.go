@@ -8,6 +8,7 @@ import (
 	"github.com/HardDie/fsentry/internal/fsutils"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	"github.com/HardDie/fsentry/pkg/fsentry_types"
 )
 
 type IFSEntry interface {
@@ -15,12 +16,13 @@ type IFSEntry interface {
 	Drop() error
 	List(path ...string) (*entity.List, error)
 
-	CreateFolder(name string, data interface{}, path ...string) error
+	CreateFolder(name string, data interface{}, path ...string) (*entity.FolderInfo, error)
 	GetFolder(name string, path ...string) (*entity.FolderInfo, error)
-	MoveFolder(oldName, newName string, path ...string) error
-	UpdateFolder(name string, data interface{}, path ...string) error
+	MoveFolder(oldName, newName string, path ...string) (*entity.FolderInfo, error)
+	UpdateFolder(name string, data interface{}, path ...string) (*entity.FolderInfo, error)
 	RemoveFolder(name string, path ...string) error
-	DuplicateFolder(srcName, dstName string, path ...string) error
+	DuplicateFolder(srcName, dstName string, path ...string) (*entity.FolderInfo, error)
+	UpdateFolderNameWithoutTimestamp(name, newName string, path ...string) error
 
 	CreateEntry(name string, data interface{}, path ...string) error
 	GetEntry(name string, path ...string) (*entity.Entry, error)
@@ -96,29 +98,29 @@ func (db *FSEntry) List(path ...string) (*entity.List, error) {
 
 // Folder
 
-func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) error {
+func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
 	fullPath, err := db.isFolderNotExist(name, path...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create folder
 	err = fsutils.CreateFolder(fullPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create info file
 	info := entity.NewFolderInfo(name, data)
 	err = fsutils.CreateInfo(fullPath, info)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return info, nil
 }
 func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.RLock()
@@ -137,26 +139,26 @@ func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, e
 
 	return info, nil
 }
-func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) error {
+func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
 	// Check if source folder exist
 	fullOldPath, err := db.isFolderExist(oldName, path...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Check if destination folder not exist
 	fullNewPath, err := db.isFolderNotExist(newName, path...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get info from file
 	info, err := fsutils.GetInfo(fullOldPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	info.SetName(newName).UpdatedNow()
@@ -164,38 +166,43 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) error {
 	// Update info file
 	err = fsutils.CreateInfo(fullOldPath, info)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return fsutils.MoveFolder(fullOldPath, fullNewPath)
+	err = fsutils.MoveFolder(fullOldPath, fullNewPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
 }
-func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) error {
+func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
 	fullPath, err := db.isFolderExist(name, path...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get info from file
 	info, err := fsutils.GetInfo(fullPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = info.UpdateData(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update info file
 	err = fsutils.CreateInfo(fullPath, info)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return info, nil
 }
 func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 	db.rwm.Lock()
@@ -213,38 +220,64 @@ func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 
 	return nil
 }
-func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) error {
+func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
 	// Check if source folder exist
 	fullSrcPath, err := db.isFolderExist(srcName, path...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Check if destination folder not exist
 	fullDstPath, err := db.isFolderNotExist(dstName, path...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Copy folder
 	err = fsutils.CopyFolder(fullSrcPath, fullDstPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get info from file
 	info, err := fsutils.GetInfo(fullDstPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	info.SetName(dstName).FlushTime()
 
 	// Update info file
 	err = fsutils.CreateInfo(fullDstPath, info)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+func (db *FSEntry) UpdateFolderNameWithoutTimestamp(name, newName string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isFolderExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	// Get info from file
+	info, err := fsutils.GetInfo(fullPath)
+	if err != nil {
+		return err
+	}
+
+	info.Id = utils.NameToID(newName)
+	info.Name = fsentry_types.QuotedString(newName)
+
+	// Update info file
+	err = fsutils.CreateInfo(fullPath, info)
 	if err != nil {
 		return err
 	}
