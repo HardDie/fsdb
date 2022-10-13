@@ -149,12 +149,6 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 		return nil, err
 	}
 
-	// Check if destination folder not exist
-	fullNewPath, err := db.isFolderNotExist(newName, path...)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get info from file
 	info, err := fsutils.GetInfo(fullOldPath)
 	if err != nil {
@@ -169,6 +163,18 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 		return nil, err
 	}
 
+	// If folders have same ID
+	if utils.NameToID(oldName) == utils.NameToID(newName) {
+		return info, nil
+	}
+
+	// Check if destination folder not exist
+	fullNewPath, err := db.isFolderNotExist(newName, path...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Move folder
 	err = fsutils.MoveFolder(fullOldPath, fullNewPath)
 	if err != nil {
 		return nil, err
@@ -331,12 +337,6 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 		return err
 	}
 
-	// Check if destination entry not exist
-	fullNewPath, err := db.isEntryNotExist(newName, path...)
-	if err != nil {
-		return err
-	}
-
 	// Read old entry
 	entry, err := fsutils.GetEntry(fullOldPath)
 	if err != nil {
@@ -349,6 +349,18 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	err = fsutils.RemoveEntry(fullOldPath)
 	if err != nil {
 		return err
+	}
+
+	var fullNewPath string
+	// If entries have same ID
+	if utils.NameToID(oldName) != utils.NameToID(newName) {
+		// Check if destination entry not exist
+		fullNewPath, err = db.isEntryNotExist(newName, path...)
+		if err != nil {
+			return err
+		}
+	} else {
+		fullNewPath = fullOldPath
 	}
 
 	// Create new entry
