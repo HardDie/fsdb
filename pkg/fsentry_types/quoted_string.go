@@ -11,11 +11,15 @@ func QS(val string) QuotedString {
 	return QuotedString(val)
 }
 
-func (s *QuotedString) MarshalJSON() ([]byte, error) {
-	if s == nil {
-		return nil, nil
-	}
-	return json.Marshal(strconv.Quote(string(*s)))
+func (s QuotedString) MarshalText() ([]byte, error) {
+	return s.MarshalJSON()
+}
+func (s *QuotedString) UnmarhsalText(data []byte) error {
+	return s.UnmarhsalText(data)
+}
+
+func (s QuotedString) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strconv.Quote(string(s)))
 }
 
 func (s *QuotedString) UnmarshalJSON(data []byte) error {
@@ -36,6 +40,6 @@ func (s *QuotedString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *QuotedString) String() string {
-	return string(*s)
+func (s QuotedString) String() string {
+	return string(s)
 }
