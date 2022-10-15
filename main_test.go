@@ -13,6 +13,7 @@ func TestFolder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer folderDB.Drop()
 
 	t.Run("create", func(t *testing.T) {
 		t.Parallel()
@@ -259,6 +260,7 @@ func TestEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer folderDB.Drop()
 
 	t.Run("create", func(t *testing.T) {
 		t.Parallel()
@@ -484,6 +486,263 @@ func TestEntry(t *testing.T) {
 		err = db.RemoveEntry("some_entry")
 		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestBinary(t *testing.T) {
+	folderDB := NewFSEntry("test")
+	err := folderDB.Init()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer folderDB.Drop()
+
+	t.Run("create", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_binary_create")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to create entry with bad name
+		err = db.CreateBinary("", []byte("data"))
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to create entry in not exist subdirectory
+		err = db.CreateBinary("bad_path", []byte("data"), "bad")
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
+			t.Fatal("Bad path for folder")
+		}
+
+		// Create binary
+		err = db.CreateBinary("some_binary", []byte("data"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to create duplicate
+		err = db.CreateBinary("some_binary", []byte("data"))
+		if !errors.Is(err, fsentry_error.ErrorExist) {
+			t.Fatal("Entry already exist")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("get", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_binary_get")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to get bad name
+		_, err = db.GetBinary("")
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to get not exist binary
+		_, err = db.GetBinary("not_exist_binary")
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatal("Binary not exist")
+		}
+
+		// Try to get from bad path
+		_, err = db.GetBinary("not_exist_binary", "bad_path")
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
+			t.Fatal("Bad path")
+		}
+
+		err = db.CreateBinary("some_entry", []byte("data"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		data, err := db.GetBinary("some_entry")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(data) != "data" {
+			t.Fatal("Bad data")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("move", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_binary_move")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to move not exist binary
+		err = db.MoveBinary("not_exist", "new_not_exist")
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatal("Binary not exist")
+		}
+
+		// Try to move bad path
+		err = db.MoveBinary("not_exist", "new_not_exist", "bad_path")
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
+			t.Fatal("Bad path")
+		}
+
+		err = db.CreateBinary("first_binary", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.CreateBinary("second_binary", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to move bad name
+		err = db.MoveBinary("", "new_not_exist")
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to move bad name
+		err = db.MoveBinary("first_binary", "")
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to move into exist binary
+		err = db.MoveBinary("first_binary", "second_binary")
+		if !errors.Is(err, fsentry_error.ErrorExist) {
+			t.Fatal("Binary already exist")
+		}
+
+		err = db.MoveBinary("first_binary", "new_first_binary")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("update", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_binary_update")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to update bad name
+		err = db.UpdateBinary("", []byte("data"))
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to update not exist binary
+		err = db.UpdateBinary("not_exist_binary", []byte("data"))
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatal("Binary not exist")
+		}
+
+		// Try to update bad path binary
+		err = db.UpdateBinary("not_exist_binary", []byte("data"), "bad_path")
+		if !errors.Is(err, fsentry_error.ErrorBadPath) {
+			t.Fatal("Bad path")
+		}
+
+		err = db.CreateBinary("some_binary", []byte("data"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		data, err := db.GetBinary("some_binary")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(data) != "data" {
+			t.Fatal("Bad data")
+		}
+
+		err = db.UpdateBinary("some_binary", []byte("other"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		data, err = db.GetBinary("some_binary")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(data) != "other" {
+			t.Fatal("Bad data")
+		}
+
+		err = db.Drop()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("remove", func(t *testing.T) {
+		t.Parallel()
+
+		db := NewFSEntry("test/test_binary_remove")
+		err := db.Init()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to remove bad name
+		err = db.RemoveBinary("")
+		if !errors.Is(err, fsentry_error.ErrorBadName) {
+			t.Fatal("Bad name")
+		}
+
+		// Try to remove not exist binary
+		err = db.RemoveBinary("not_exist_binary")
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatal("Binary not exist")
+		}
+
+		err = db.CreateBinary("some_binary", []byte("data"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.RemoveBinary("some_binary")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Try to remove twice
+		err = db.RemoveEntry("some_binary")
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatal("Binary not exist")
 		}
 
 		err = db.Drop()

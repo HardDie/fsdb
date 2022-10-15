@@ -30,6 +30,12 @@ type IFSEntry interface {
 	UpdateEntry(name string, data interface{}, path ...string) error
 	RemoveEntry(name string, path ...string) error
 	DuplicateEntry(srcName, dstName string, path ...string) error
+
+	CreateBinary(name string, data []byte, path ...string) error
+	GetBinary(name string, path ...string) ([]byte, error)
+	MoveBinary(oldName, newName string, path ...string) error
+	UpdateBinary(name string, data []byte, path ...string) error
+	RemoveBinary(name string, path ...string) error
 }
 type FSEntry struct {
 	root string
@@ -174,8 +180,8 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 		return nil, err
 	}
 
-	// Move folder
-	err = fsutils.MoveFolder(fullOldPath, fullNewPath)
+	// Rename folder
+	err = fsutils.MoveObject(fullOldPath, fullNewPath)
 	if err != nil {
 		return nil, err
 	}
@@ -448,6 +454,99 @@ func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error
 	return nil
 }
 
+// Binary
+
+func (db *FSEntry) CreateBinary(name string, data []byte, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isBinaryNotExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	err = fsutils.CreateBinary(fullPath, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (db *FSEntry) GetBinary(name string, path ...string) ([]byte, error) {
+	db.rwm.RLock()
+	defer db.rwm.RUnlock()
+
+	fullPath, err := db.isBinaryExist(name, path...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get data from file
+	data, err := fsutils.GetBinary(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+func (db *FSEntry) MoveBinary(oldName, newName string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	// Check if source binary exist
+	fullOldPath, err := db.isBinaryExist(oldName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Check if destination binary not exist
+	fullNewPath, err := db.isBinaryNotExist(newName, path...)
+	if err != nil {
+		return err
+	}
+
+	// Rename binary
+	err = fsutils.MoveObject(fullOldPath, fullNewPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (db *FSEntry) UpdateBinary(name string, data []byte, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isBinaryExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	// Update binary file
+	err = fsutils.CreateBinary(fullPath, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (db *FSEntry) RemoveBinary(name string, path ...string) error {
+	db.rwm.Lock()
+	defer db.rwm.Unlock()
+
+	fullPath, err := db.isBinaryExist(name, path...)
+	if err != nil {
+		return err
+	}
+
+	err = fsutils.RemoveBinary(fullPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // util
 
 func (db *FSEntry) buildPath(id string, path ...string) string {
@@ -511,11 +610,24 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 	return fullPath, nil
 }
 func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
+	return db.isFileExist(name, ".json", path...)
+}
+func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) {
+	return db.isFileNotExist(name, ".json", path...)
+}
+func (db *FSEntry) isBinaryExist(name string, path ...string) (string, error) {
+	return db.isFileExist(name, ".bin", path...)
+}
+func (db *FSEntry) isBinaryNotExist(name string, path ...string) (string, error) {
+	return db.isFileNotExist(name, ".bin", path...)
+}
+
+func (db *FSEntry) isFileExist(name, ext string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
 		return "", fsentry_error.ErrorBadName
 	}
-	id += ".json"
+	id += ext
 
 	fullPath := db.buildPath(id, path...)
 
@@ -529,7 +641,7 @@ func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 	}
 
 	// Check if destination entry exist
-	isExist, err = fsutils.IsEntryExist(fullPath)
+	isExist, err = fsutils.IsFileExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -539,12 +651,12 @@ func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
 
 	return fullPath, nil
 }
-func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) {
+func (db *FSEntry) isFileNotExist(name, ext string, path ...string) (string, error) {
 	id := utils.NameToID(name)
 	if id == "" {
 		return "", fsentry_error.ErrorBadName
 	}
-	id += ".json"
+	id += ext
 
 	fullPath := db.buildPath(id, path...)
 
@@ -558,7 +670,7 @@ func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) 
 	}
 
 	// Check if destination entry exist
-	isExist, err = fsutils.IsEntryExist(fullPath)
+	isExist, err = fsutils.IsFileExist(fullPath)
 	if err != nil {
 		return "", err
 	}

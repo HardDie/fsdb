@@ -2,6 +2,7 @@ package fsutils
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -81,13 +82,6 @@ func CreateAllFolder(path string) error {
 	}
 	return nil
 }
-func MoveFolder(oldPath, newPath string) error {
-	err := os.Rename(oldPath, newPath)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
 func CopyFolder(srcPath, dstPath string) error {
 	err := copy.Copy(srcPath, dstPath)
 	if err != nil {
@@ -103,25 +97,6 @@ func RemoveFolder(path string) error {
 	return nil
 }
 
-func IsEntryExist(path string) (isExist bool, err error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// entry not exist
-			return false, nil
-		}
-		// other error
-		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-
-	// check if it is not a folder
-	if stat.IsDir() {
-		return false, fsentry_error.ErrorBadPath
-	}
-
-	// entry exists
-	return true, nil
-}
 func CreateEntry(path string, entry *entity.Entry) error {
 	file, err := os.Create(path)
 	if err != nil {
@@ -149,6 +124,66 @@ func GetEntry(path string) (*entity.Entry, error) {
 }
 func RemoveEntry(path string) error {
 	err := os.Remove(path)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+
+func CreateBinary(path string, data []byte) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+
+	_, err = file.Write(data)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+func GetBinary(path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return data, nil
+}
+func RemoveBinary(path string) error {
+	err := os.Remove(path)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+
+func IsFileExist(path string) (isExist bool, err error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// entry not exist
+			return false, nil
+		}
+		// other error
+		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+
+	// check if it is not a folder
+	if stat.IsDir() {
+		return false, fsentry_error.ErrorBadPath
+	}
+
+	// entry exists
+	return true, nil
+}
+
+func MoveObject(oldPath, newPath string) error {
+	err := os.Rename(oldPath, newPath)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
