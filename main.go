@@ -108,6 +108,10 @@ func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) (
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isFolderNotExist(name, path...)
 	if err != nil {
 		return nil, err
@@ -132,6 +136,10 @@ func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, e
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
 
+	if utils.NameToID(name) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isFolderExist(name, path...)
 	if err != nil {
 		return nil, err
@@ -148,6 +156,10 @@ func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, e
 func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
+
+	if utils.NameToID(oldName) == "" || utils.NameToID(newName) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
 
 	// Check if source folder exist
 	fullOldPath, err := db.isFolderExist(oldName, path...)
@@ -192,6 +204,10 @@ func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) (
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isFolderExist(name, path...)
 	if err != nil {
 		return nil, err
@@ -220,6 +236,10 @@ func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isFolderExist(name, path...)
 	if err != nil {
 		return err
@@ -235,6 +255,10 @@ func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
+
+	if utils.NameToID(srcName) == "" || utils.NameToID(dstName) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
 
 	// Check if source folder exist
 	fullSrcPath, err := db.isFolderExist(srcName, path...)
@@ -274,6 +298,10 @@ func (db *FSEntry) UpdateFolderNameWithoutTimestamp(name, newName string, path .
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" || utils.NameToID(newName) == "" {
+		return fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isFolderExist(name, path...)
 	if err != nil {
 		return err
@@ -303,6 +331,10 @@ func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) er
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isEntryNotExist(name, path...)
 	if err != nil {
 		return err
@@ -320,6 +352,10 @@ func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) 
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
 
+	if utils.NameToID(name) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isEntryExist(name, path...)
 	if err != nil {
 		return nil, err
@@ -336,6 +372,10 @@ func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) 
 func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
+
+	if utils.NameToID(oldName) == "" || utils.NameToID(newName) == "" {
+		return fsentry_error.ErrorBadName
+	}
 
 	// Check if source entry exist
 	fullOldPath, err := db.isEntryExist(oldName, path...)
@@ -381,6 +421,10 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isEntryExist(name, path...)
 	if err != nil {
 		return err
@@ -409,6 +453,10 @@ func (db *FSEntry) RemoveEntry(name string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isEntryExist(name, path...)
 	if err != nil {
 		return err
@@ -424,6 +472,10 @@ func (db *FSEntry) RemoveEntry(name string, path ...string) error {
 func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
+
+	if utils.NameToID(srcName) == "" || utils.NameToID(dstName) == "" {
+		return fsentry_error.ErrorBadName
+	}
 
 	// Check if source entry exist
 	fullSrcPath, err := db.isEntryExist(srcName, path...)
@@ -460,6 +512,10 @@ func (db *FSEntry) CreateBinary(name string, data []byte, path ...string) error 
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isBinaryNotExist(name, path...)
 	if err != nil {
 		return err
@@ -475,6 +531,10 @@ func (db *FSEntry) CreateBinary(name string, data []byte, path ...string) error 
 func (db *FSEntry) GetBinary(name string, path ...string) ([]byte, error) {
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
+
+	if utils.NameToID(name) == "" {
+		return nil, fsentry_error.ErrorBadName
+	}
 
 	fullPath, err := db.isBinaryExist(name, path...)
 	if err != nil {
@@ -492,6 +552,10 @@ func (db *FSEntry) GetBinary(name string, path ...string) ([]byte, error) {
 func (db *FSEntry) MoveBinary(oldName, newName string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
+
+	if utils.NameToID(oldName) == "" || utils.NameToID(newName) == "" {
+		return fsentry_error.ErrorBadName
+	}
 
 	// Check if source binary exist
 	fullOldPath, err := db.isBinaryExist(oldName, path...)
@@ -517,6 +581,10 @@ func (db *FSEntry) UpdateBinary(name string, data []byte, path ...string) error 
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
+	if utils.NameToID(name) == "" {
+		return fsentry_error.ErrorBadName
+	}
+
 	fullPath, err := db.isBinaryExist(name, path...)
 	if err != nil {
 		return err
@@ -533,6 +601,10 @@ func (db *FSEntry) UpdateBinary(name string, data []byte, path ...string) error 
 func (db *FSEntry) RemoveBinary(name string, path ...string) error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
+
+	if utils.NameToID(name) == "" {
+		return fsentry_error.ErrorBadName
+	}
 
 	fullPath, err := db.isBinaryExist(name, path...)
 	if err != nil {
