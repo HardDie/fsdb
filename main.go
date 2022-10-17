@@ -422,7 +422,7 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 	defer db.rwm.Unlock()
 
 	if utils.NameToID(name) == "" {
-		return nil, fsentry_error.ErrorBadName
+		return fsentry_error.ErrorBadName
 	}
 
 	fullPath, err := db.isEntryExist(name, path...)
