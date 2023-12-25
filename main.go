@@ -40,6 +40,8 @@ type IFSEntry interface {
 type FSEntry struct {
 	root string
 	rwm  sync.RWMutex
+
+	isPretty bool
 }
 
 var (
@@ -47,10 +49,20 @@ var (
 	_ IFSEntry = &FSEntry{}
 )
 
-func NewFSEntry(root string) IFSEntry {
-	return &FSEntry{
+func WithPretty() func(fs *FSEntry) {
+	return func(fs *FSEntry) {
+		fs.isPretty = true
+	}
+}
+
+func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
+	res := &FSEntry{
 		root: root,
 	}
+	for _, op := range ops {
+		op(res)
+	}
+	return res
 }
 
 // Basic
@@ -341,7 +353,7 @@ func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) er
 	}
 
 	entry := entity.NewEntry(name, data)
-	err = fsutils.CreateEntry(fullPath, entry)
+	err = fsutils.CreateEntry(fullPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -410,7 +422,7 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	}
 
 	// Create new entry
-	err = fsutils.CreateEntry(fullNewPath, entry)
+	err = fsutils.CreateEntry(fullNewPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -442,7 +454,7 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 	}
 
 	// Update entry file
-	err = fsutils.CreateEntry(fullPath, entry)
+	err = fsutils.CreateEntry(fullPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -498,7 +510,7 @@ func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error
 	entry.SetName(dstName).FlushTime()
 
 	// Create entry file
-	err = fsutils.CreateEntry(fullDstPath, entry)
+	err = fsutils.CreateEntry(fullDstPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}

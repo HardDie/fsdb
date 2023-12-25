@@ -97,13 +97,17 @@ func RemoveFolder(path string) error {
 	return nil
 }
 
-func CreateEntry(path string, entry *entity.Entry) error {
+func CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
-	err = json.NewEncoder(file).Encode(entry)
+	enc := json.NewEncoder(file)
+	if isIndent {
+		enc.SetIndent("", "	")
+	}
+	err = enc.Encode(entry)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
