@@ -391,12 +391,6 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 
 	entry.SetName(newName).UpdatedNow()
 
-	// Remove old entry
-	err = fsutils.RemoveEntry(fullOldPath)
-	if err != nil {
-		return err
-	}
-
 	var fullNewPath string
 	// If entries have same ID
 	if utils.NameToID(oldName) != utils.NameToID(newName) {
@@ -407,6 +401,12 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 		}
 	} else {
 		fullNewPath = fullOldPath
+	}
+
+	// Remove old entry
+	err = fsutils.RemoveEntry(fullOldPath)
+	if err != nil {
+		return err
 	}
 
 	// Create new entry
