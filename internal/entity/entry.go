@@ -16,8 +16,13 @@ type Entry struct {
 	Data      json.RawMessage `json:"data"`
 }
 
-func NewEntry(name string, data interface{}) *Entry {
-	dataJson, _ := json.Marshal(data)
+func NewEntry(name string, data interface{}, isIndent bool) *Entry {
+	var dataJson []byte
+	if isIndent {
+		dataJson, _ = json.MarshalIndent(data, "", "	")
+	} else {
+		dataJson, _ = json.Marshal(data)
+	}
 	return &Entry{
 		Id:        utils.NameToID(name),
 		Name:      name,
@@ -40,8 +45,14 @@ func (i *Entry) FlushTime() *Entry {
 	i.UpdatedAt = nil
 	return i
 }
-func (i *Entry) UpdateData(data interface{}) error {
-	dataJson, err := json.Marshal(data)
+func (i *Entry) UpdateData(data interface{}, isIndent bool) error {
+	var dataJson []byte
+	var err error
+	if isIndent {
+		dataJson, err = json.MarshalIndent(data, "", "	")
+	} else {
+		dataJson, err = json.Marshal(data)
+	}
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}

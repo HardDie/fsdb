@@ -136,8 +136,8 @@ func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) (
 	}
 
 	// Create info file
-	info := entity.NewFolderInfo(name, data)
-	err = fsutils.CreateInfo(fullPath, info)
+	info := entity.NewFolderInfo(name, data, db.isPretty)
+	err = fsutils.CreateInfo(fullPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 	info.SetName(newName).UpdatedNow()
 
 	// Update info file
-	err = fsutils.CreateInfo(fullOldPath, info)
+	err = fsutils.CreateInfo(fullOldPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -231,13 +231,13 @@ func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) (
 		return nil, err
 	}
 
-	err = info.UpdateData(data)
+	err = info.UpdateData(data, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update info file
-	err = fsutils.CreateInfo(fullPath, info)
+	err = fsutils.CreateInfo(fullPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) (*en
 	info.SetName(dstName).FlushTime()
 
 	// Update info file
-	err = fsutils.CreateInfo(fullDstPath, info)
+	err = fsutils.CreateInfo(fullDstPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (db *FSEntry) UpdateFolderNameWithoutTimestamp(name, newName string, path .
 	info.Name = fsentry_types.QuotedString(newName)
 
 	// Update info file
-	err = fsutils.CreateInfo(fullPath, info)
+	err = fsutils.CreateInfo(fullPath, info, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) er
 		return err
 	}
 
-	entry := entity.NewEntry(name, data)
+	entry := entity.NewEntry(name, data, db.isPretty)
 	err = fsutils.CreateEntry(fullPath, entry, db.isPretty)
 	if err != nil {
 		return err
@@ -448,7 +448,7 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 		return err
 	}
 
-	err = entry.UpdateData(data)
+	err = entry.UpdateData(data, db.isPretty)
 	if err != nil {
 		return err
 	}

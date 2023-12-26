@@ -194,13 +194,17 @@ func MoveObject(oldPath, newPath string) error {
 	return nil
 }
 
-func CreateInfo(path string, data *entity.FolderInfo) error {
+func CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error {
 	file, err := os.Create(filepath.Join(path, InfoFile))
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 
-	err = json.NewEncoder(file).Encode(data)
+	enc := json.NewEncoder(file)
+	if isIndent {
+		enc.SetIndent("", "	")
+	}
+	err = enc.Encode(data)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}

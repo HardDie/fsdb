@@ -17,8 +17,13 @@ type FolderInfo struct {
 	Data      json.RawMessage            `json:"data"`
 }
 
-func NewFolderInfo(name string, data interface{}) *FolderInfo {
-	dataJson, _ := json.Marshal(data)
+func NewFolderInfo(name string, data interface{}, isIndent bool) *FolderInfo {
+	var dataJson []byte
+	if isIndent {
+		dataJson, _ = json.MarshalIndent(data, "", "	")
+	} else {
+		dataJson, _ = json.Marshal(data)
+	}
 	return &FolderInfo{
 		Id:        utils.NameToID(name),
 		Name:      fsentry_types.QuotedString(name),
@@ -41,8 +46,14 @@ func (i *FolderInfo) FlushTime() *FolderInfo {
 	i.UpdatedAt = nil
 	return i
 }
-func (i *FolderInfo) UpdateData(data interface{}) error {
-	dataJson, err := json.Marshal(data)
+func (i *FolderInfo) UpdateData(data interface{}, isIndent bool) error {
+	var dataJson []byte
+	var err error
+	if isIndent {
+		dataJson, err = json.MarshalIndent(data, "", "	")
+	} else {
+		dataJson, err = json.Marshal(data)
+	}
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
