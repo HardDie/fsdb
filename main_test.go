@@ -2,6 +2,7 @@ package fsentry
 
 import (
 	"errors"
+	"path"
 	"testing"
 
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -18,7 +19,7 @@ func TestFolder(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_folder_create")
+		db := NewFSEntry(path.Join("test", "test_folder_create"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -63,7 +64,7 @@ func TestFolder(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_folder_get")
+		db := NewFSEntry(path.Join("test", "test_folder_get"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -110,7 +111,7 @@ func TestFolder(t *testing.T) {
 	t.Run("move", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_folder_move")
+		db := NewFSEntry(path.Join("test", "test_folder_move"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -170,7 +171,7 @@ func TestFolder(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_folder_update")
+		db := NewFSEntry(path.Join("test", "test_folder_update"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -213,7 +214,7 @@ func TestFolder(t *testing.T) {
 	t.Run("remove", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_folder_remove")
+		db := NewFSEntry(path.Join("test", "test_folder_remove"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -265,7 +266,7 @@ func TestEntry(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_entry_create")
+		db := NewFSEntry(path.Join("test", "test_entry_create"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -304,7 +305,7 @@ func TestEntry(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_entry_get")
+		db := NewFSEntry(path.Join("test", "test_entry_get"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -351,7 +352,7 @@ func TestEntry(t *testing.T) {
 	t.Run("move", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_entry_move")
+		db := NewFSEntry(path.Join("test", "test_entry_move"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -411,7 +412,7 @@ func TestEntry(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_entry_update")
+		db := NewFSEntry(path.Join("test", "test_entry_update"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -454,7 +455,7 @@ func TestEntry(t *testing.T) {
 	t.Run("remove", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_entry_remove")
+		db := NewFSEntry(path.Join("test", "test_entry_remove"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -506,7 +507,7 @@ func TestBinary(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_binary_create")
+		db := NewFSEntry(path.Join("test", "test_binary_create"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -545,7 +546,7 @@ func TestBinary(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_binary_get")
+		db := NewFSEntry(path.Join("test", "test_binary_get"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -592,7 +593,7 @@ func TestBinary(t *testing.T) {
 	t.Run("move", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_binary_move")
+		db := NewFSEntry(path.Join("test", "test_binary_move"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -652,7 +653,7 @@ func TestBinary(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_binary_update")
+		db := NewFSEntry(path.Join("test", "test_binary_update"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
@@ -711,7 +712,7 @@ func TestBinary(t *testing.T) {
 	t.Run("remove", func(t *testing.T) {
 		t.Parallel()
 
-		db := NewFSEntry("test/test_binary_remove")
+		db := NewFSEntry(path.Join("test", "test_binary_remove"))
 		err := db.Init()
 		if err != nil {
 			t.Fatal(err)
