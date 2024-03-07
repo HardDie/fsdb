@@ -10,7 +10,7 @@ const (
 )
 
 var (
-	reg = regexp.MustCompile("[^a-zA-Zа-яА-Я0-9_]+")
+	reg = regexp.MustCompile("[^\\p{L}0-9_]+")
 )
 
 func NameToID(in string) string {
