@@ -3,8 +3,8 @@ package binary
 import (
 	"sync"
 
-	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
-	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	repositoryBinary "github.com/HardDie/fsentry/internal/repository/binary"
+	repositoryEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -24,26 +24,26 @@ type binary struct {
 
 	isPretty bool
 
-	fs       repFS.FS
-	repEntry repEntry.Entry
-	common   serviceCommon.Common
+	repEntry  repositoryEntry.Entry
+	repBinary repositoryBinary.Binary
+	common    serviceCommon.Common
 }
 
 func NewBinary(
 	root string,
 	rwm *sync.RWMutex,
 	isPretty bool,
-	fs repFS.FS,
-	repEntry repEntry.Entry,
+	repEntry repositoryEntry.Entry,
+	repBinary repositoryBinary.Binary,
 	common serviceCommon.Common,
 ) Binary {
 	return &binary{
-		root:     root,
-		rwm:      rwm,
-		isPretty: isPretty,
-		fs:       fs,
-		repEntry: repEntry,
-		common:   common,
+		root:      root,
+		rwm:       rwm,
+		isPretty:  isPretty,
+		repEntry:  repEntry,
+		repBinary: repBinary,
+		common:    common,
 	}
 }
 
@@ -60,7 +60,7 @@ func (s *binary) CreateBinary(name string, data []byte, path ...string) error {
 		return err
 	}
 
-	err = s.fs.CreateBinary(fullPath, data)
+	err = s.repBinary.CreateBinary(fullPath, data)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (s *binary) GetBinary(name string, path ...string) ([]byte, error) {
 	}
 
 	// Get data from file
-	data, err := s.fs.GetBinary(fullPath)
+	data, err := s.repBinary.GetBinary(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (s *binary) UpdateBinary(name string, data []byte, path ...string) error {
 	}
 
 	// Update binary file
-	err = s.fs.CreateBinary(fullPath, data)
+	err = s.repBinary.CreateBinary(fullPath, data)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (s *binary) RemoveBinary(name string, path ...string) error {
 		return err
 	}
 
-	err = s.fs.RemoveBinary(fullPath)
+	err = s.repBinary.RemoveBinary(fullPath)
 	if err != nil {
 		return err
 	}

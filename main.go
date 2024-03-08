@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
-	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
-	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	repositoryBinary "github.com/HardDie/fsentry/internal/repository/binary"
+	repositoryEntry "github.com/HardDie/fsentry/internal/repository/entry"
+	repositoryFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	serviceBinary "github.com/HardDie/fsentry/internal/service/binary"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	serviceEntry "github.com/HardDie/fsentry/internal/service/entry"
@@ -37,9 +37,9 @@ type FSEntry struct {
 
 	isPretty bool
 
-	fs            repFS.FS
-	repFolder     repFolder.Folder
-	repEntry      repEntry.Entry
+	repFolder     repositoryFolder.Folder
+	repEntry      repositoryEntry.Entry
+	repBinary     repositoryBinary.Binary
 	serviceCommon serviceCommon.Common
 	serviceFolder.Folder
 	serviceEntry.Entry
@@ -55,18 +55,17 @@ func WithPretty() func(fs *FSEntry) {
 func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 	res := &FSEntry{
 		root:      root,
-		fs:        repFS.NewFS(),
-		repFolder: repFolder.NewFolder(),
-		repEntry:  repEntry.NewEntry(),
+		repFolder: repositoryFolder.NewFolder(),
+		repEntry:  repositoryEntry.NewEntry(),
+		repBinary: repositoryBinary.NewBinary(),
 	}
 	for _, op := range ops {
 		op(res)
 	}
-	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs, res.repFolder, res.repEntry)
-	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty,
-		res.fs, res.repFolder, res.repEntry, res.serviceCommon)
-	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.fs, res.repEntry, res.serviceCommon)
-	res.Binary = serviceBinary.NewBinary(res.root, &res.rwm, res.isPretty, res.fs, res.repEntry, res.serviceCommon)
+	res.serviceCommon = serviceCommon.NewCommon(res.root, res.repFolder, res.repEntry)
+	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty, res.repFolder, res.repEntry, res.serviceCommon)
+	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.repEntry, res.serviceCommon)
+	res.Binary = serviceBinary.NewBinary(res.root, &res.rwm, res.isPretty, res.repEntry, res.repBinary, res.serviceCommon)
 	return res
 }
 

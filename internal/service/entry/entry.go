@@ -4,8 +4,7 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
-	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	repositoryEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -26,8 +25,7 @@ type entry struct {
 
 	isPretty bool
 
-	fs       repFS.FS
-	repEntry repEntry.Entry
+	repEntry repositoryEntry.Entry
 	common   serviceCommon.Common
 }
 
@@ -35,15 +33,13 @@ func NewEntry(
 	root string,
 	rwm *sync.RWMutex,
 	isPretty bool,
-	fs repFS.FS,
-	repEntry repEntry.Entry,
+	repEntry repositoryEntry.Entry,
 	common serviceCommon.Common,
 ) Entry {
 	return &entry{
 		root:     root,
 		rwm:      rwm,
 		isPretty: isPretty,
-		fs:       fs,
 		repEntry: repEntry,
 		common:   common,
 	}

@@ -1,4 +1,4 @@
-package fs
+package binary
 
 import (
 	"io"
@@ -8,24 +8,20 @@ import (
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
-const (
-	InfoFile = ".info.json"
-)
-
-type FS interface {
+type Binary interface {
 	CreateBinary(path string, data []byte) error
 	GetBinary(path string) ([]byte, error)
 	RemoveBinary(path string) error
 }
 
-type fs struct {
+type binary struct {
 }
 
-func NewFS() FS {
-	return fs{}
+func NewBinary() Binary {
+	return binary{}
 }
 
-func (r fs) CreateBinary(path string, data []byte) error {
+func (r binary) CreateBinary(path string, data []byte) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -45,7 +41,7 @@ func (r fs) CreateBinary(path string, data []byte) error {
 	}
 	return nil
 }
-func (r fs) GetBinary(path string) ([]byte, error) {
+func (r binary) GetBinary(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -58,7 +54,7 @@ func (r fs) GetBinary(path string) ([]byte, error) {
 	}
 	return data, nil
 }
-func (r fs) RemoveBinary(path string) error {
+func (r binary) RemoveBinary(path string) error {
 	err := os.Remove(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)

@@ -3,9 +3,8 @@ package common
 import (
 	"path/filepath"
 
-	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
-	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
-	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	repositoryEntry "github.com/HardDie/fsentry/internal/repository/entry"
+	repositoryFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
@@ -24,20 +23,17 @@ type Common interface {
 
 type common struct {
 	root      string
-	fs        repFS.FS
-	repFolder repFolder.Folder
-	repEntry  repEntry.Entry
+	repFolder repositoryFolder.Folder
+	repEntry  repositoryEntry.Entry
 }
 
 func NewCommon(
 	root string,
-	fs repFS.FS,
-	repFolder repFolder.Folder,
-	repEntry repEntry.Entry,
+	repFolder repositoryFolder.Folder,
+	repEntry repositoryEntry.Entry,
 ) Common {
 	return common{
 		root:      root,
-		fs:        fs,
 		repFolder: repFolder,
 		repEntry:  repEntry,
 	}

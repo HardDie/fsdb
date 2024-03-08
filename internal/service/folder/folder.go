@@ -4,9 +4,8 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
-	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
-	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	repositoryEntry "github.com/HardDie/fsentry/internal/repository/entry"
+	repositoryFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -29,9 +28,8 @@ type folder struct {
 
 	isPretty bool
 
-	fs        repFS.FS
-	repFolder repFolder.Folder
-	repEntry  repEntry.Entry
+	repFolder repositoryFolder.Folder
+	repEntry  repositoryEntry.Entry
 	common    serviceCommon.Common
 }
 
@@ -39,16 +37,14 @@ func NewFolder(
 	root string,
 	rwm *sync.RWMutex,
 	isPretty bool,
-	fs repFS.FS,
-	repFolder repFolder.Folder,
-	repEntry repEntry.Entry,
+	repFolder repositoryFolder.Folder,
+	repEntry repositoryEntry.Entry,
 	common serviceCommon.Common,
 ) Folder {
 	return &folder{
 		root:      root,
 		rwm:       rwm,
 		isPretty:  isPretty,
-		fs:        fs,
 		repFolder: repFolder,
 		repEntry:  repEntry,
 		common:    common,
