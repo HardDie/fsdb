@@ -3,6 +3,7 @@ package common
 import (
 	"path/filepath"
 
+	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -21,14 +22,20 @@ type Common interface {
 }
 
 type common struct {
-	root string
-	fs   repFS.FS
+	root      string
+	fs        repFS.FS
+	repFolder repFolder.Folder
 }
 
-func NewCommon(root string, fs repFS.FS) Common {
+func NewCommon(
+	root string,
+	fs repFS.FS,
+	repFolder repFolder.Folder,
+) Common {
 	return common{
-		root: root,
-		fs:   fs,
+		root:      root,
+		fs:        fs,
+		repFolder: repFolder,
 	}
 }
 
@@ -45,7 +52,7 @@ func (s common) IsFolderExist(name string, path ...string) (string, error) {
 	fullPath := s.BuildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := s.fs.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := s.repFolder.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +61,7 @@ func (s common) IsFolderExist(name string, path ...string) (string, error) {
 	}
 
 	// Check if destination folder exist
-	isExist, err = s.fs.IsFolderExist(fullPath)
+	isExist, err = s.repFolder.IsFolderExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +80,7 @@ func (s common) IsFolderNotExist(name string, path ...string) (string, error) {
 	fullPath := s.BuildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := s.fs.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := s.repFolder.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +89,7 @@ func (s common) IsFolderNotExist(name string, path ...string) (string, error) {
 	}
 
 	// Check if destination folder exist
-	isExist, err = s.fs.IsFolderExist(fullPath)
+	isExist, err = s.repFolder.IsFolderExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -114,7 +121,7 @@ func (s common) IsFileExist(name, ext string, path ...string) (string, error) {
 	fullPath := s.BuildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := s.fs.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := s.repFolder.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +150,7 @@ func (s common) IsFileNotExist(name, ext string, path ...string) (string, error)
 	fullPath := s.BuildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := s.fs.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := s.repFolder.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}

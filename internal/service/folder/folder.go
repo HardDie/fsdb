@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
@@ -27,8 +28,9 @@ type folder struct {
 
 	isPretty bool
 
-	fs     repFS.FS
-	common serviceCommon.Common
+	fs        repFS.FS
+	repFolder repFolder.Folder
+	common    serviceCommon.Common
 }
 
 func NewFolder(
@@ -36,14 +38,16 @@ func NewFolder(
 	rwm *sync.RWMutex,
 	isPretty bool,
 	fs repFS.FS,
+	repFolder repFolder.Folder,
 	common serviceCommon.Common,
 ) Folder {
 	return &folder{
-		root:     root,
-		rwm:      rwm,
-		isPretty: isPretty,
-		fs:       fs,
-		common:   common,
+		root:      root,
+		rwm:       rwm,
+		isPretty:  isPretty,
+		fs:        fs,
+		repFolder: repFolder,
+		common:    common,
 	}
 }
 
@@ -84,7 +88,7 @@ func (s *folder) CreateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Create folder
-	err = s.fs.CreateFolder(fullPath)
+	err = s.repFolder.CreateFolder(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +215,7 @@ func (s *folder) RemoveFolder(name string, path ...string) error {
 		return err
 	}
 
-	err = s.fs.RemoveFolder(fullPath)
+	err = s.repFolder.RemoveFolder(fullPath)
 	if err != nil {
 		return err
 	}
@@ -239,7 +243,7 @@ func (s *folder) DuplicateFolder(srcName, dstName string, path ...string) (*enti
 	}
 
 	// Copy folder
-	err = s.fs.CopyFolder(fullSrcPath, fullDstPath)
+	err = s.repFolder.CopyFolder(fullSrcPath, fullDstPath)
 	if err != nil {
 		return nil, err
 	}

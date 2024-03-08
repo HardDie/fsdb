@@ -8,11 +8,17 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceBinary "github.com/HardDie/fsentry/internal/service/binary"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	serviceEntry "github.com/HardDie/fsentry/internal/service/entry"
 	serviceFolder "github.com/HardDie/fsentry/internal/service/folder"
+)
+
+var (
+	// validate interface.
+	_ IFSEntry = &FSEntry{}
 )
 
 type IFSEntry interface {
@@ -31,16 +37,12 @@ type FSEntry struct {
 	isPretty bool
 
 	fs            repFS.FS
+	repFolder     repFolder.Folder
 	serviceCommon serviceCommon.Common
 	serviceFolder.Folder
 	serviceEntry.Entry
 	serviceBinary.Binary
 }
-
-var (
-	// validate interface.
-	_ IFSEntry = &FSEntry{}
-)
 
 func WithPretty() func(fs *FSEntry) {
 	return func(fs *FSEntry) {
@@ -50,14 +52,15 @@ func WithPretty() func(fs *FSEntry) {
 
 func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 	res := &FSEntry{
-		root: root,
-		fs:   repFS.NewFS(),
+		root:      root,
+		fs:        repFS.NewFS(),
+		repFolder: repFolder.NewFolder(),
 	}
 	for _, op := range ops {
 		op(res)
 	}
-	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs)
-	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
+	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs, res.repFolder)
+	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty, res.fs, res.repFolder, res.serviceCommon)
 	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
 	res.Binary = serviceBinary.NewBinary(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
 	return res
@@ -71,14 +74,14 @@ func (db *FSEntry) Init() error {
 	defer db.rwm.Unlock()
 
 	// Check if db folder exist
-	isExist, err := db.fs.IsFolderExist(db.root)
+	isExist, err := db.repFolder.IsFolderExist(db.root)
 	if err != nil {
 		return err
 	}
 	if isExist {
 		return nil
 	}
-	err = db.fs.CreateAllFolder(db.root)
+	err = db.repFolder.CreateAllFolder(db.root)
 	if err != nil {
 		return err
 	}
@@ -91,7 +94,7 @@ func (db *FSEntry) Drop() error {
 	defer db.rwm.Unlock()
 
 	// Check if db folder exist
-	isExist, err := db.fs.IsFolderExist(db.root)
+	isExist, err := db.repFolder.IsFolderExist(db.root)
 	if err != nil {
 		return err
 	}
@@ -100,7 +103,7 @@ func (db *FSEntry) Drop() error {
 	}
 
 	// Remove db folder
-	err = db.fs.RemoveFolder(db.root)
+	err = db.repFolder.RemoveFolder(db.root)
 	if err != nil {
 		return err
 	}
@@ -114,5 +117,5 @@ func (db *FSEntry) List(path ...string) (*entity.List, error) {
 	defer db.rwm.RUnlock()
 
 	fullPath := db.serviceCommon.BuildPath("", path...)
-	return db.fs.List(fullPath)
+	return db.repFolder.List(fullPath)
 }
