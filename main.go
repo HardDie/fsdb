@@ -4,11 +4,11 @@
 package fsentry
 
 import (
-	"path/filepath"
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
@@ -46,7 +46,8 @@ type FSEntry struct {
 
 	isPretty bool
 
-	fs repFS.FS
+	fs            repFS.FS
+	serviceCommon serviceCommon.Common
 }
 
 var (
@@ -65,6 +66,7 @@ func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 		root: root,
 		fs:   repFS.NewFS(),
 	}
+	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs)
 	for _, op := range ops {
 		op(res)
 	}
@@ -121,7 +123,7 @@ func (db *FSEntry) List(path ...string) (*entity.List, error) {
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
 
-	fullPath := db.buildPath("", path...)
+	fullPath := db.serviceCommon.BuildPath("", path...)
 	return db.fs.List(fullPath)
 }
 
@@ -155,7 +157,7 @@ func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) (
 		return nil, fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isFolderNotExist(name, path...)
+	fullPath, err := db.serviceCommon.IsFolderNotExist(name, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +185,7 @@ func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, e
 		return nil, fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isFolderExist(name, path...)
+	fullPath, err := db.serviceCommon.IsFolderExist(name, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +207,7 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 	}
 
 	// Check if source folder exist
-	fullOldPath, err := db.isFolderExist(oldName, path...)
+	fullOldPath, err := db.serviceCommon.IsFolderExist(oldName, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +232,7 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 	}
 
 	// Check if destination folder not exist
-	fullNewPath, err := db.isFolderNotExist(newName, path...)
+	fullNewPath, err := db.serviceCommon.IsFolderNotExist(newName, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +253,7 @@ func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) (
 		return nil, fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isFolderExist(name, path...)
+	fullPath, err := db.serviceCommon.IsFolderExist(name, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +285,7 @@ func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isFolderExist(name, path...)
+	fullPath, err := db.serviceCommon.IsFolderExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -304,13 +306,13 @@ func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) (*en
 	}
 
 	// Check if source folder exist
-	fullSrcPath, err := db.isFolderExist(srcName, path...)
+	fullSrcPath, err := db.serviceCommon.IsFolderExist(srcName, path...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if destination folder not exist
-	fullDstPath, err := db.isFolderNotExist(dstName, path...)
+	fullDstPath, err := db.serviceCommon.IsFolderNotExist(dstName, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +347,7 @@ func (db *FSEntry) UpdateFolderNameWithoutTimestamp(name, newName string, path .
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isFolderExist(name, path...)
+	fullPath, err := db.serviceCommon.IsFolderExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -378,7 +380,7 @@ func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) er
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isEntryNotExist(name, path...)
+	fullPath, err := db.serviceCommon.IsEntryNotExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -399,7 +401,7 @@ func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) 
 		return nil, fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isEntryExist(name, path...)
+	fullPath, err := db.serviceCommon.IsEntryExist(name, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +423,7 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	}
 
 	// Check if source entry exist
-	fullOldPath, err := db.isEntryExist(oldName, path...)
+	fullOldPath, err := db.serviceCommon.IsEntryExist(oldName, path...)
 	if err != nil {
 		return err
 	}
@@ -438,7 +440,7 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	// If entries have same ID
 	if utils.NameToID(oldName) != utils.NameToID(newName) {
 		// Check if destination entry not exist
-		fullNewPath, err = db.isEntryNotExist(newName, path...)
+		fullNewPath, err = db.serviceCommon.IsEntryNotExist(newName, path...)
 		if err != nil {
 			return err
 		}
@@ -468,7 +470,7 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isEntryExist(name, path...)
+	fullPath, err := db.serviceCommon.IsEntryExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -500,7 +502,7 @@ func (db *FSEntry) RemoveEntry(name string, path ...string) error {
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isEntryExist(name, path...)
+	fullPath, err := db.serviceCommon.IsEntryExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -521,13 +523,13 @@ func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error
 	}
 
 	// Check if source entry exist
-	fullSrcPath, err := db.isEntryExist(srcName, path...)
+	fullSrcPath, err := db.serviceCommon.IsEntryExist(srcName, path...)
 	if err != nil {
 		return err
 	}
 
 	// Check if destination entry not exist
-	fullDstPath, err := db.isEntryNotExist(dstName, path...)
+	fullDstPath, err := db.serviceCommon.IsEntryNotExist(dstName, path...)
 	if err != nil {
 		return err
 	}
@@ -559,7 +561,7 @@ func (db *FSEntry) CreateBinary(name string, data []byte, path ...string) error 
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isBinaryNotExist(name, path...)
+	fullPath, err := db.serviceCommon.IsBinaryNotExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -579,7 +581,7 @@ func (db *FSEntry) GetBinary(name string, path ...string) ([]byte, error) {
 		return nil, fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isBinaryExist(name, path...)
+	fullPath, err := db.serviceCommon.IsBinaryExist(name, path...)
 	if err != nil {
 		return nil, err
 	}
@@ -601,13 +603,13 @@ func (db *FSEntry) MoveBinary(oldName, newName string, path ...string) error {
 	}
 
 	// Check if source binary exist
-	fullOldPath, err := db.isBinaryExist(oldName, path...)
+	fullOldPath, err := db.serviceCommon.IsBinaryExist(oldName, path...)
 	if err != nil {
 		return err
 	}
 
 	// Check if destination binary not exist
-	fullNewPath, err := db.isBinaryNotExist(newName, path...)
+	fullNewPath, err := db.serviceCommon.IsBinaryNotExist(newName, path...)
 	if err != nil {
 		return err
 	}
@@ -628,7 +630,7 @@ func (db *FSEntry) UpdateBinary(name string, data []byte, path ...string) error 
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isBinaryExist(name, path...)
+	fullPath, err := db.serviceCommon.IsBinaryExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -649,7 +651,7 @@ func (db *FSEntry) RemoveBinary(name string, path ...string) error {
 		return fsentry_error.ErrorBadName
 	}
 
-	fullPath, err := db.isBinaryExist(name, path...)
+	fullPath, err := db.serviceCommon.IsBinaryExist(name, path...)
 	if err != nil {
 		return err
 	}
@@ -660,138 +662,4 @@ func (db *FSEntry) RemoveBinary(name string, path ...string) error {
 	}
 
 	return nil
-}
-
-// util
-
-func (db *FSEntry) buildPath(id string, path ...string) string {
-	pathSlice := append([]string{db.root}, path...)
-	return filepath.Join(append(pathSlice, id)...)
-}
-func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
-	id := utils.NameToID(name)
-	if id == "" {
-		return "", fsentry_error.ErrorBadName
-	}
-
-	fullPath := db.buildPath(id, path...)
-
-	// Check if root folder exist
-	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsentry_error.ErrorBadPath
-	}
-
-	// Check if destination folder exist
-	isExist, err = db.fs.IsFolderExist(fullPath)
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsentry_error.ErrorNotExist
-	}
-
-	return fullPath, nil
-}
-func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error) {
-	id := utils.NameToID(name)
-	if id == "" {
-		return "", fsentry_error.ErrorBadName
-	}
-
-	fullPath := db.buildPath(id, path...)
-
-	// Check if root folder exist
-	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsentry_error.ErrorBadPath
-	}
-
-	// Check if destination folder exist
-	isExist, err = db.fs.IsFolderExist(fullPath)
-	if err != nil {
-		return "", err
-	}
-	if isExist {
-		return "", fsentry_error.ErrorExist
-	}
-
-	return fullPath, nil
-}
-func (db *FSEntry) isEntryExist(name string, path ...string) (string, error) {
-	return db.isFileExist(name, ".json", path...)
-}
-func (db *FSEntry) isEntryNotExist(name string, path ...string) (string, error) {
-	return db.isFileNotExist(name, ".json", path...)
-}
-func (db *FSEntry) isBinaryExist(name string, path ...string) (string, error) {
-	return db.isFileExist(name, ".bin", path...)
-}
-func (db *FSEntry) isBinaryNotExist(name string, path ...string) (string, error) {
-	return db.isFileNotExist(name, ".bin", path...)
-}
-
-func (db *FSEntry) isFileExist(name, ext string, path ...string) (string, error) {
-	id := utils.NameToID(name)
-	if id == "" {
-		return "", fsentry_error.ErrorBadName
-	}
-	id += ext
-
-	fullPath := db.buildPath(id, path...)
-
-	// Check if root folder exist
-	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsentry_error.ErrorBadPath
-	}
-
-	// Check if destination entry exist
-	isExist, err = db.fs.IsFileExist(fullPath)
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsentry_error.ErrorNotExist
-	}
-
-	return fullPath, nil
-}
-func (db *FSEntry) isFileNotExist(name, ext string, path ...string) (string, error) {
-	id := utils.NameToID(name)
-	if id == "" {
-		return "", fsentry_error.ErrorBadName
-	}
-	id += ext
-
-	fullPath := db.buildPath(id, path...)
-
-	// Check if root folder exist
-	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
-	if err != nil {
-		return "", err
-	}
-	if !isExist {
-		return "", fsentry_error.ErrorBadPath
-	}
-
-	// Check if destination entry exist
-	isExist, err = db.fs.IsFileExist(fullPath)
-	if err != nil {
-		return "", err
-	}
-	if isExist {
-		return "", fsentry_error.ErrorExist
-	}
-
-	return fullPath, nil
 }
