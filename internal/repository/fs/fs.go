@@ -3,6 +3,7 @@ package fs
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -115,10 +116,8 @@ func (r fs) List(path string) (*entity.List, error) {
 
 		if file.IsDir() {
 			res.Folders = append(res.Folders, file.Name())
-		} else {
-			if filepath.Ext(name) == ".json" {
-				res.Entries = append(res.Entries, name[0:len(name)-5])
-			}
+		} else if filepath.Ext(name) == ".json" {
+			res.Entries = append(res.Entries, name[0:len(name)-5])
 		}
 	}
 
@@ -131,8 +130,12 @@ func (r fs) CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	defer func() {
-		file.Sync()
-		file.Close()
+		if err = file.Sync(); err != nil {
+			log.Printf("CreateEntry(): error sync file %q: %s", path, err.Error())
+		}
+		if err = file.Close(); err != nil {
+			log.Printf("CreateEntry(): error close file %q: %s", path, err.Error())
+		}
 	}()
 
 	enc := json.NewEncoder(file)
@@ -172,8 +175,12 @@ func (r fs) CreateBinary(path string, data []byte) error {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	defer func() {
-		file.Sync()
-		file.Close()
+		if err = file.Sync(); err != nil {
+			log.Printf("CreateBinary(): error sync file %q: %s", path, err.Error())
+		}
+		if err = file.Close(); err != nil {
+			log.Printf("CreateBinary(): error close file %q: %s", path, err.Error())
+		}
 	}()
 
 	_, err = file.Write(data)
@@ -234,8 +241,13 @@ func (r fs) CreateInfo(path string, data *entity.FolderInfo, isIndent bool) erro
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	defer func() {
-		file.Sync()
-		file.Close()
+		var err error
+		if err = file.Sync(); err != nil {
+			log.Printf("CreateInfo(): error sync file %q: %s", path, err.Error())
+		}
+		if err = file.Close(); err != nil {
+			log.Printf("CreateInfo(): error close file %q: %s", path, err.Error())
+		}
 	}()
 
 	enc := json.NewEncoder(file)

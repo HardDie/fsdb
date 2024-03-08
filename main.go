@@ -1,6 +1,7 @@
 // fsentry
 //
-// Allows storing hierarchical data in files and folders on the file system with json descriptions and creation/update timestamps.
+// Allows storing hierarchical data in files and folders on the file system
+// with json descriptions and creation/update timestamps.
 package fsentry
 
 import (
@@ -37,7 +38,7 @@ type FSEntry struct {
 }
 
 var (
-	// validate interface
+	// validate interface.
 	_ IFSEntry = &FSEntry{}
 )
 

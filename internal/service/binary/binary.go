@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
-	"github.com/HardDie/fsentry/internal/service/common"
+	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
@@ -24,7 +24,7 @@ type binary struct {
 	isPretty bool
 
 	fs     repFS.FS
-	common common.Common
+	common serviceCommon.Common
 }
 
 func NewBinary(
@@ -32,7 +32,7 @@ func NewBinary(
 	rwm *sync.RWMutex,
 	isPretty bool,
 	fs repFS.FS,
-	common common.Common,
+	common serviceCommon.Common,
 ) Binary {
 	return &binary{
 		root:     root,

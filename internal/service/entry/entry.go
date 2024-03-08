@@ -5,7 +5,7 @@ import (
 
 	"github.com/HardDie/fsentry/internal/entity"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
-	"github.com/HardDie/fsentry/internal/service/common"
+	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
@@ -26,7 +26,7 @@ type entry struct {
 	isPretty bool
 
 	fs     repFS.FS
-	common common.Common
+	common serviceCommon.Common
 }
 
 func NewEntry(
@@ -34,7 +34,7 @@ func NewEntry(
 	rwm *sync.RWMutex,
 	isPretty bool,
 	fs repFS.FS,
-	common common.Common,
+	common serviceCommon.Common,
 ) Entry {
 	return &entry{
 		root:     root,

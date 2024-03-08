@@ -5,7 +5,7 @@ import (
 
 	"github.com/HardDie/fsentry/internal/entity"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
-	"github.com/HardDie/fsentry/internal/service/common"
+	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
@@ -28,7 +28,7 @@ type folder struct {
 	isPretty bool
 
 	fs     repFS.FS
-	common common.Common
+	common serviceCommon.Common
 }
 
 func NewFolder(
@@ -36,7 +36,7 @@ func NewFolder(
 	rwm *sync.RWMutex,
 	isPretty bool,
 	fs repFS.FS,
-	common common.Common,
+	common serviceCommon.Common,
 ) Folder {
 	return &folder{
 		root:     root,
@@ -50,7 +50,8 @@ func NewFolder(
 // CreateFolder you can use this method to create a folder within the repository.
 // name - Name of the folder to be created.
 // data - If you want to store some payload inside the json metadata you can pass it here.
-// path - Optional value if you want to create a folder inside an existing folder. If you want to create a folder in the root of the storage, you can leave this value empty.
+// path - Optional value if you want to create a folder inside an existing folder.
+// If you want to create a folder in the root of the storage, you can leave this value empty.
 //
 // As the result you receive JSON metadata file that was created in the created folder.
 //
