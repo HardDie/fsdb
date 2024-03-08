@@ -1,7 +1,9 @@
 package fs
 
 import (
+	"errors"
 	"io"
+	iofs "io/fs"
 	"log"
 	"os"
 
@@ -11,7 +13,9 @@ import (
 )
 
 const (
-	DirPerm = 0755
+	CreateDirPerm   = 0755
+	CreateFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
+	CreateFilePerm  = 0666
 )
 
 type FS interface {
@@ -36,9 +40,11 @@ func NewFS() FS {
 
 // CreateFile allows you to create a file and fill it with some binary data.
 func (r fs) CreateFile(path string, data []byte) error {
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, CreateFileFlags, CreateFilePerm)
 	if err != nil {
-		// TODO: process different types of errors
+		if e := isKnownError(err); e != nil {
+			return e
+		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	defer func() {
@@ -65,7 +71,9 @@ func (r fs) CreateFile(path string, data []byte) error {
 func (r fs) ReadFile(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		// TODO: process different types of errors
+		if e := isKnownError(err); e != nil {
+			return nil, e
+		}
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	defer func() {
@@ -95,9 +103,11 @@ func (r fs) RemoveFile(path string) error {
 
 // CreateFolder allows you to create a folder in the file system.
 func (r fs) CreateFolder(path string) error {
-	err := os.Mkdir(path, DirPerm)
+	err := os.Mkdir(path, CreateDirPerm)
 	if err != nil {
-		// TODO: process different types of errors
+		if e := isKnownError(err); e != nil {
+			return e
+		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
@@ -106,7 +116,7 @@ func (r fs) CreateFolder(path string) error {
 // CreateAllFolder allows you to create a folder in the file system,
 // and if some intermediate folders in the desired path do not exist, they will also be created.
 func (r fs) CreateAllFolder(path string) error {
-	err := os.MkdirAll(path, DirPerm)
+	err := os.MkdirAll(path, CreateDirPerm)
 	if err != nil {
 		// TODO: process different types of errors
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -200,4 +210,19 @@ func (r fs) IsFolderExist(path string) (isExist bool, err error) {
 
 	// folder exists
 	return true, nil
+}
+
+func isKnownError(err error) error {
+	var pathErr *iofs.PathError
+	if errors.As(err, &pathErr) {
+		switch {
+		case os.IsExist(pathErr):
+			return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
+		case os.IsNotExist(pathErr):
+			return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+		case os.IsPermission(pathErr):
+			return fsentry_error.Wrap(err, fsentry_error.ErrorPermissions)
+		}
+	}
+	return nil
 }

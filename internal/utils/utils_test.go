@@ -12,7 +12,7 @@ func FuzzNameToIDFile(f *testing.F) {
 	if err != nil {
 		f.Fatal("error creating temp dir", err)
 	}
-	err = os.Remove(tmp)
+	err = os.RemoveAll(tmp)
 	if err != nil {
 		f.Fatal("error removing temp dir", err)
 	}
