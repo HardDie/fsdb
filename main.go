@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceBinary "github.com/HardDie/fsentry/internal/service/binary"
@@ -38,6 +39,7 @@ type FSEntry struct {
 
 	fs            repFS.FS
 	repFolder     repFolder.Folder
+	repEntry      repEntry.Entry
 	serviceCommon serviceCommon.Common
 	serviceFolder.Folder
 	serviceEntry.Entry
@@ -55,14 +57,16 @@ func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 		root:      root,
 		fs:        repFS.NewFS(),
 		repFolder: repFolder.NewFolder(),
+		repEntry:  repEntry.NewEntry(),
 	}
 	for _, op := range ops {
 		op(res)
 	}
-	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs, res.repFolder)
-	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty, res.fs, res.repFolder, res.serviceCommon)
-	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
-	res.Binary = serviceBinary.NewBinary(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
+	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs, res.repFolder, res.repEntry)
+	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty,
+		res.fs, res.repFolder, res.repEntry, res.serviceCommon)
+	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.fs, res.repEntry, res.serviceCommon)
+	res.Binary = serviceBinary.NewBinary(res.root, &res.rwm, res.isPretty, res.fs, res.repEntry, res.serviceCommon)
 	return res
 }
 

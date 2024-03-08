@@ -3,6 +3,7 @@ package binary
 import (
 	"sync"
 
+	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
@@ -23,8 +24,9 @@ type binary struct {
 
 	isPretty bool
 
-	fs     repFS.FS
-	common serviceCommon.Common
+	fs       repFS.FS
+	repEntry repEntry.Entry
+	common   serviceCommon.Common
 }
 
 func NewBinary(
@@ -32,6 +34,7 @@ func NewBinary(
 	rwm *sync.RWMutex,
 	isPretty bool,
 	fs repFS.FS,
+	repEntry repEntry.Entry,
 	common serviceCommon.Common,
 ) Binary {
 	return &binary{
@@ -39,6 +42,7 @@ func NewBinary(
 		rwm:      rwm,
 		isPretty: isPretty,
 		fs:       fs,
+		repEntry: repEntry,
 		common:   common,
 	}
 }
@@ -105,7 +109,7 @@ func (s *binary) MoveBinary(oldName, newName string, path ...string) error {
 	}
 
 	// Rename binary
-	err = s.fs.MoveObject(fullOldPath, fullNewPath)
+	err = s.repEntry.MoveObject(fullOldPath, fullNewPath)
 	if err != nil {
 		return err
 	}

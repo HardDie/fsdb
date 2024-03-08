@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	"github.com/HardDie/fsentry/internal/utils"
@@ -25,8 +26,9 @@ type entry struct {
 
 	isPretty bool
 
-	fs     repFS.FS
-	common serviceCommon.Common
+	fs       repFS.FS
+	repEntry repEntry.Entry
+	common   serviceCommon.Common
 }
 
 func NewEntry(
@@ -34,6 +36,7 @@ func NewEntry(
 	rwm *sync.RWMutex,
 	isPretty bool,
 	fs repFS.FS,
+	repEntry repEntry.Entry,
 	common serviceCommon.Common,
 ) Entry {
 	return &entry{
@@ -41,6 +44,7 @@ func NewEntry(
 		rwm:      rwm,
 		isPretty: isPretty,
 		fs:       fs,
+		repEntry: repEntry,
 		common:   common,
 	}
 }
@@ -59,7 +63,7 @@ func (s *entry) CreateEntry(name string, data interface{}, path ...string) error
 	}
 
 	ent := entity.NewEntry(name, data, s.isPretty)
-	err = s.fs.CreateEntry(fullPath, ent, s.isPretty)
+	err = s.repEntry.CreateEntry(fullPath, ent, s.isPretty)
 	if err != nil {
 		return err
 	}
@@ -80,7 +84,7 @@ func (s *entry) GetEntry(name string, path ...string) (*entity.Entry, error) {
 	}
 
 	// Get info from file
-	ent, err := s.fs.GetEntry(fullPath)
+	ent, err := s.repEntry.GetEntry(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +106,7 @@ func (s *entry) MoveEntry(oldName, newName string, path ...string) error {
 	}
 
 	// Read old entry
-	ent, err := s.fs.GetEntry(fullOldPath)
+	ent, err := s.repEntry.GetEntry(fullOldPath)
 	if err != nil {
 		return err
 	}
@@ -122,13 +126,13 @@ func (s *entry) MoveEntry(oldName, newName string, path ...string) error {
 	}
 
 	// Remove old entry
-	err = s.fs.RemoveEntry(fullOldPath)
+	err = s.repEntry.RemoveEntry(fullOldPath)
 	if err != nil {
 		return err
 	}
 
 	// Create new entry
-	err = s.fs.CreateEntry(fullNewPath, ent, s.isPretty)
+	err = s.repEntry.CreateEntry(fullNewPath, ent, s.isPretty)
 	if err != nil {
 		return err
 	}
@@ -149,7 +153,7 @@ func (s *entry) UpdateEntry(name string, data interface{}, path ...string) error
 	}
 
 	// Get entry from file
-	ent, err := s.fs.GetEntry(fullPath)
+	ent, err := s.repEntry.GetEntry(fullPath)
 	if err != nil {
 		return err
 	}
@@ -160,7 +164,7 @@ func (s *entry) UpdateEntry(name string, data interface{}, path ...string) error
 	}
 
 	// Update entry file
-	err = s.fs.CreateEntry(fullPath, ent, s.isPretty)
+	err = s.repEntry.CreateEntry(fullPath, ent, s.isPretty)
 	if err != nil {
 		return err
 	}
@@ -180,7 +184,7 @@ func (s *entry) RemoveEntry(name string, path ...string) error {
 		return err
 	}
 
-	err = s.fs.RemoveEntry(fullPath)
+	err = s.repEntry.RemoveEntry(fullPath)
 	if err != nil {
 		return err
 	}
@@ -208,7 +212,7 @@ func (s *entry) DuplicateEntry(srcName, dstName string, path ...string) error {
 	}
 
 	// Get entry from file
-	ent, err := s.fs.GetEntry(fullSrcPath)
+	ent, err := s.repEntry.GetEntry(fullSrcPath)
 	if err != nil {
 		return err
 	}
@@ -216,7 +220,7 @@ func (s *entry) DuplicateEntry(srcName, dstName string, path ...string) error {
 	ent.SetName(dstName).FlushTime()
 
 	// Create entry file
-	err = s.fs.CreateEntry(fullDstPath, ent, s.isPretty)
+	err = s.repEntry.CreateEntry(fullDstPath, ent, s.isPretty)
 	if err != nil {
 		return err
 	}

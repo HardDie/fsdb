@@ -3,6 +3,7 @@ package common
 import (
 	"path/filepath"
 
+	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	"github.com/HardDie/fsentry/internal/utils"
@@ -25,17 +26,20 @@ type common struct {
 	root      string
 	fs        repFS.FS
 	repFolder repFolder.Folder
+	repEntry  repEntry.Entry
 }
 
 func NewCommon(
 	root string,
 	fs repFS.FS,
 	repFolder repFolder.Folder,
+	repEntry repEntry.Entry,
 ) Common {
 	return common{
 		root:      root,
 		fs:        fs,
 		repFolder: repFolder,
+		repEntry:  repEntry,
 	}
 }
 
@@ -130,7 +134,7 @@ func (s common) IsFileExist(name, ext string, path ...string) (string, error) {
 	}
 
 	// Check if destination entry exist
-	isExist, err = s.fs.IsFileExist(fullPath)
+	isExist, err = s.repEntry.IsFileExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -159,7 +163,7 @@ func (s common) IsFileNotExist(name, ext string, path ...string) (string, error)
 	}
 
 	// Check if destination entry exist
-	isExist, err = s.fs.IsFileExist(fullPath)
+	isExist, err = s.repEntry.IsFileExist(fullPath)
 	if err != nil {
 		return "", err
 	}

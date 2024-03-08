@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	repEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	repFolder "github.com/HardDie/fsentry/internal/repository/folder"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
@@ -30,6 +31,7 @@ type folder struct {
 
 	fs        repFS.FS
 	repFolder repFolder.Folder
+	repEntry  repEntry.Entry
 	common    serviceCommon.Common
 }
 
@@ -39,6 +41,7 @@ func NewFolder(
 	isPretty bool,
 	fs repFS.FS,
 	repFolder repFolder.Folder,
+	repEntry repEntry.Entry,
 	common serviceCommon.Common,
 ) Folder {
 	return &folder{
@@ -47,6 +50,7 @@ func NewFolder(
 		isPretty:  isPretty,
 		fs:        fs,
 		repFolder: repFolder,
+		repEntry:  repEntry,
 		common:    common,
 	}
 }
@@ -95,7 +99,7 @@ func (s *folder) CreateFolder(name string, data interface{}, path ...string) (*e
 
 	// Create info file
 	info := entity.NewFolderInfo(name, data, s.isPretty)
-	err = s.fs.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repEntry.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +120,7 @@ func (s *folder) GetFolder(name string, path ...string) (*entity.FolderInfo, err
 	}
 
 	// Get info from file
-	info, err := s.fs.GetInfo(fullPath)
+	info, err := s.repEntry.GetInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +142,7 @@ func (s *folder) MoveFolder(oldName, newName string, path ...string) (*entity.Fo
 	}
 
 	// Get info from file
-	info, err := s.fs.GetInfo(fullOldPath)
+	info, err := s.repEntry.GetInfo(fullOldPath)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +150,7 @@ func (s *folder) MoveFolder(oldName, newName string, path ...string) (*entity.Fo
 	info.SetName(newName).UpdatedNow()
 
 	// Update info file
-	err = s.fs.CreateInfo(fullOldPath, info, s.isPretty)
+	err = s.repEntry.CreateInfo(fullOldPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +167,7 @@ func (s *folder) MoveFolder(oldName, newName string, path ...string) (*entity.Fo
 	}
 
 	// Rename folder
-	err = s.fs.MoveObject(fullOldPath, fullNewPath)
+	err = s.repEntry.MoveObject(fullOldPath, fullNewPath)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +188,7 @@ func (s *folder) UpdateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Get info from file
-	info, err := s.fs.GetInfo(fullPath)
+	info, err := s.repEntry.GetInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +199,7 @@ func (s *folder) UpdateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Update info file
-	err = s.fs.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repEntry.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +253,7 @@ func (s *folder) DuplicateFolder(srcName, dstName string, path ...string) (*enti
 	}
 
 	// Get info from file
-	info, err := s.fs.GetInfo(fullDstPath)
+	info, err := s.repEntry.GetInfo(fullDstPath)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +261,7 @@ func (s *folder) DuplicateFolder(srcName, dstName string, path ...string) (*enti
 	info.SetName(dstName).FlushTime()
 
 	// Update info file
-	err = s.fs.CreateInfo(fullDstPath, info, s.isPretty)
+	err = s.repEntry.CreateInfo(fullDstPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +282,7 @@ func (s *folder) UpdateFolderNameWithoutTimestamp(name, newName string, path ...
 	}
 
 	// Get info from file
-	info, err := s.fs.GetInfo(fullPath)
+	info, err := s.repEntry.GetInfo(fullPath)
 	if err != nil {
 		return err
 	}
@@ -287,7 +291,7 @@ func (s *folder) UpdateFolderNameWithoutTimestamp(name, newName string, path ...
 	info.Name = fsentry_types.QuotedString(newName)
 
 	// Update info file
-	err = s.fs.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repEntry.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return err
 	}
