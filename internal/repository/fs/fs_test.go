@@ -5,7 +5,10 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"runtime"
 	"testing"
+
+	acl "github.com/hectane/go-acl"
 
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
@@ -55,7 +58,7 @@ func TestCreateFile(t *testing.T) {
 		defer os.RemoveAll(dir)
 
 		// Forbid creating something inside
-		err = os.Chmod(dir, 0400)
+		err = chmod(dir, 0400)
 		if err != nil {
 			t.Fatal("error updating permission", err)
 		}
@@ -129,12 +132,12 @@ func TestReadFile(t *testing.T) {
 		}
 
 		// Forbid reading
-		err = os.Chmod(dir, 0000)
+		err = chmod(dir, 0000)
 		if err != nil {
 			t.Fatal("error updating permission", err)
 		}
 		defer func() {
-			err = os.Chmod(dir, CreateDirPerm)
+			err = chmod(dir, CreateDirPerm)
 			if err != nil {
 				t.Fatal("error updating permission", err)
 			}
@@ -165,7 +168,7 @@ func TestReadFile(t *testing.T) {
 		}
 
 		// Forbid reading
-		err = os.Chmod(filePath, 0000)
+		err = chmod(filePath, 0000)
 		if err != nil {
 			t.Fatal("error updating permission", err)
 		}
@@ -243,12 +246,12 @@ func TestUpdateFile(t *testing.T) {
 		}
 
 		// Forbid reading
-		err = os.Chmod(dir, 0000)
+		err = chmod(dir, 0000)
 		if err != nil {
 			t.Fatal("error updating permission", err)
 		}
 		defer func() {
-			err = os.Chmod(dir, CreateDirPerm)
+			err = chmod(dir, CreateDirPerm)
 			if err != nil {
 				t.Fatal("error updating permission", err)
 			}
@@ -279,7 +282,7 @@ func TestUpdateFile(t *testing.T) {
 		}
 
 		// Forbid writing
-		err = os.Chmod(filePath, 0400)
+		err = chmod(filePath, 0400)
 		if err != nil {
 			t.Fatal("error updating permission", err)
 		}
@@ -338,7 +341,7 @@ func TestCreateFolder(t *testing.T) {
 		defer os.RemoveAll(dir)
 
 		// Forbid creating something inside
-		err = os.Chmod(dir, 0400)
+		err = chmod(dir, 0400)
 		if err != nil {
 			t.Fatal("error updating permission", err)
 		}
@@ -352,4 +355,11 @@ func TestCreateFolder(t *testing.T) {
 			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
 		}
 	})
+}
+
+func chmod(name string, mode os.FileMode) error {
+	if runtime.GOOS == "windows" {
+		return acl.Chmod(name, mode)
+	}
+	return os.Chmod(name, mode)
 }
