@@ -160,7 +160,7 @@ func (s *entry) UpdateEntry(name string, data interface{}, path ...string) error
 	}
 
 	// Update entry file
-	err = s.repEntry.CreateEntry(fullPath, ent, s.isPretty)
+	err = s.repEntry.UpdateEntry(fullPath, ent, s.isPretty)
 	if err != nil {
 		return err
 	}

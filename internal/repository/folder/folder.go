@@ -19,6 +19,7 @@ type Folder interface {
 	RemoveFolder(path string) error
 	List(path string) (*entity.List, error)
 	CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error
+	UpdateInfo(path string, info *entity.FolderInfo, isIndent bool) error
 	GetInfo(path string) (*entity.FolderInfo, error)
 	IsFolderExist(path string) (isExist bool, err error)
 }
@@ -87,6 +88,19 @@ func (r folder) CreateInfo(path string, info *entity.FolderInfo, isIndent bool) 
 		return err
 	}
 	err = r.fs.CreateFile(filepath.Join(path, InfoFile), data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateInfo allows you to update an existing .info.json file with metadata for a Folder object.
+func (r folder) UpdateInfo(path string, info *entity.FolderInfo, isIndent bool) error {
+	data, err := common.DataToJSON(info, isIndent)
+	if err != nil {
+		return err
+	}
+	err = r.fs.UpdateFile(filepath.Join(path, InfoFile), data)
 	if err != nil {
 		return err
 	}

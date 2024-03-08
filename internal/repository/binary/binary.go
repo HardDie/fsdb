@@ -6,6 +6,7 @@ import (
 
 type Binary interface {
 	CreateBinary(path string, data []byte) error
+	UpdateBinary(path string, data []byte) error
 	GetBinary(path string) ([]byte, error)
 	RemoveBinary(path string) error
 }
@@ -23,6 +24,11 @@ func NewBinary(fs repositoryFS.FS) Binary {
 // CreateBinary allows you to create a *.bin file at the specified path.
 func (r binary) CreateBinary(path string, data []byte) error {
 	return r.fs.CreateFile(path, data)
+}
+
+// UpdateBinary allows you to update an existing *.bin file at the specified path.
+func (r binary) UpdateBinary(path string, data []byte) error {
+	return r.fs.UpdateFile(path, data)
 }
 
 // GetBinary checks if the file can be accessed, reads all the contents from it and returns it.

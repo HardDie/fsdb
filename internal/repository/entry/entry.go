@@ -8,6 +8,7 @@ import (
 
 type Entry interface {
 	CreateEntry(path string, entry *entity.Entry, isIndent bool) error
+	UpdateEntry(path string, entry *entity.Entry, isIndent bool) error
 	GetEntry(path string) (*entity.Entry, error)
 	RemoveEntry(path string) error
 	IsFileExist(path string) (isExist bool, err error)
@@ -32,6 +33,19 @@ func (r entry) CreateEntry(path string, entry *entity.Entry, isIndent bool) erro
 		return err
 	}
 	err = r.fs.CreateFile(path, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateEntry allows you to update an existing Entry json file.
+func (r entry) UpdateEntry(path string, entry *entity.Entry, isIndent bool) error {
+	data, err := common.DataToJSON(entry, isIndent)
+	if err != nil {
+		return err
+	}
+	err = r.fs.UpdateFile(path, data)
 	if err != nil {
 		return err
 	}

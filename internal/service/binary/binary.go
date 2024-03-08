@@ -130,7 +130,7 @@ func (s *binary) UpdateBinary(name string, data []byte, path ...string) error {
 	}
 
 	// Update binary file
-	err = s.repBinary.CreateBinary(fullPath, data)
+	err = s.repBinary.UpdateBinary(fullPath, data)
 	if err != nil {
 		return err
 	}

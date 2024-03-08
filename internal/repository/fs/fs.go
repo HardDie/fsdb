@@ -15,12 +15,14 @@ import (
 const (
 	CreateDirPerm   = 0755
 	CreateFileFlags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
+	UpdateFileFlags = os.O_WRONLY | os.O_TRUNC
 	CreateFilePerm  = 0666
 )
 
 type FS interface {
 	CreateFile(path string, data []byte) error
 	ReadFile(path string) ([]byte, error)
+	UpdateFile(path string, data []byte) error
 	RemoveFile(path string) error
 	CreateFolder(path string) error
 	CreateAllFolder(path string) error
@@ -63,6 +65,35 @@ func (r fs) CreateFile(path string, data []byte) error {
 	}
 	if n != len(data) {
 		log.Printf("CreateFile(): the size of input and written data is different. Received: %d, written: %d", len(data), n)
+	}
+	return nil
+}
+
+// CreateFile allows you to update a file.
+func (r fs) UpdateFile(path string, data []byte) error {
+	file, err := os.OpenFile(path, UpdateFileFlags, CreateFilePerm)
+	if err != nil {
+		if e := isKnownError(err); e != nil {
+			return e
+		}
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	defer func() {
+		if err = file.Sync(); err != nil {
+			log.Printf("UpdateFile(): error sync file %q: %s", path, err.Error())
+		}
+		if err = file.Close(); err != nil {
+			log.Printf("UpdateFile(): error close file %q: %s", path, err.Error())
+		}
+	}()
+
+	n, err := file.Write(data)
+	if err != nil {
+		// TODO: process different types of errors
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	if n != len(data) {
+		log.Printf("UpdateFile(): the size of input and written data is different. Received: %d, written: %d", len(data), n)
 	}
 	return nil
 }

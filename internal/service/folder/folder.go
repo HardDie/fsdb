@@ -146,7 +146,7 @@ func (s *folder) MoveFolder(oldName, newName string, path ...string) (*entity.Fo
 	info.SetName(newName).UpdatedNow()
 
 	// Update info file
-	err = s.repFolder.CreateInfo(fullOldPath, info, s.isPretty)
+	err = s.repFolder.UpdateInfo(fullOldPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s *folder) UpdateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Update info file
-	err = s.repFolder.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repFolder.UpdateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
