@@ -22,6 +22,7 @@ func List(path string) (*entity.List, error) {
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer f.Close()
 
 	files, err := f.Readdir(0)
 	if err != nil {
@@ -102,6 +103,10 @@ func CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer func() {
+		file.Sync()
+		file.Close()
+	}()
 
 	enc := json.NewEncoder(file)
 	if isIndent {
@@ -118,6 +123,7 @@ func GetEntry(path string) (*entity.Entry, error) {
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer file.Close()
 
 	info := &entity.Entry{}
 	err = json.NewDecoder(file).Decode(info)
@@ -139,6 +145,10 @@ func CreateBinary(path string, data []byte) error {
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer func() {
+		file.Sync()
+		file.Close()
+	}()
 
 	_, err = file.Write(data)
 	if err != nil {
@@ -151,6 +161,7 @@ func GetBinary(path string) ([]byte, error) {
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
@@ -199,6 +210,10 @@ func CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error {
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer func() {
+		file.Sync()
+		file.Close()
+	}()
 
 	enc := json.NewEncoder(file)
 	if isIndent {
@@ -215,6 +230,7 @@ func GetInfo(path string) (*entity.FolderInfo, error) {
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
+	defer file.Close()
 
 	info := &entity.FolderInfo{}
 	err = json.NewDecoder(file).Decode(info)
