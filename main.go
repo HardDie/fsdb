@@ -8,11 +8,10 @@ import (
 
 	"github.com/HardDie/fsentry/internal/entity"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
+	serviceBinary "github.com/HardDie/fsentry/internal/service/binary"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	serviceEntry "github.com/HardDie/fsentry/internal/service/entry"
 	serviceFolder "github.com/HardDie/fsentry/internal/service/folder"
-	"github.com/HardDie/fsentry/internal/utils"
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 type IFSEntry interface {
@@ -22,12 +21,7 @@ type IFSEntry interface {
 
 	serviceFolder.Folder
 	serviceEntry.Entry
-
-	CreateBinary(name string, data []byte, path ...string) error
-	GetBinary(name string, path ...string) ([]byte, error)
-	MoveBinary(oldName, newName string, path ...string) error
-	UpdateBinary(name string, data []byte, path ...string) error
-	RemoveBinary(name string, path ...string) error
+	serviceBinary.Binary
 }
 type FSEntry struct {
 	root string
@@ -39,6 +33,7 @@ type FSEntry struct {
 	serviceCommon serviceCommon.Common
 	serviceFolder.Folder
 	serviceEntry.Entry
+	serviceBinary.Binary
 }
 
 var (
@@ -63,6 +58,7 @@ func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs)
 	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
 	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
+	res.Binary = serviceBinary.NewBinary(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
 	return res
 }
 
@@ -118,117 +114,4 @@ func (db *FSEntry) List(path ...string) (*entity.List, error) {
 
 	fullPath := db.serviceCommon.BuildPath("", path...)
 	return db.fs.List(fullPath)
-}
-
-// Binary
-
-func (db *FSEntry) CreateBinary(name string, data []byte, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(name) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsBinaryNotExist(name, path...)
-	if err != nil {
-		return err
-	}
-
-	err = db.fs.CreateBinary(fullPath, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) GetBinary(name string, path ...string) ([]byte, error) {
-	db.rwm.RLock()
-	defer db.rwm.RUnlock()
-
-	if utils.NameToID(name) == "" {
-		return nil, fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsBinaryExist(name, path...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get data from file
-	data, err := db.fs.GetBinary(fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-func (db *FSEntry) MoveBinary(oldName, newName string, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(oldName) == "" || utils.NameToID(newName) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	// Check if source binary exist
-	fullOldPath, err := db.serviceCommon.IsBinaryExist(oldName, path...)
-	if err != nil {
-		return err
-	}
-
-	// Check if destination binary not exist
-	fullNewPath, err := db.serviceCommon.IsBinaryNotExist(newName, path...)
-	if err != nil {
-		return err
-	}
-
-	// Rename binary
-	err = db.fs.MoveObject(fullOldPath, fullNewPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) UpdateBinary(name string, data []byte, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(name) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsBinaryExist(name, path...)
-	if err != nil {
-		return err
-	}
-
-	// Update binary file
-	err = db.fs.CreateBinary(fullPath, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) RemoveBinary(name string, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(name) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsBinaryExist(name, path...)
-	if err != nil {
-		return err
-	}
-
-	err = db.fs.RemoveBinary(fullPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
