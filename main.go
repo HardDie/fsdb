@@ -9,6 +9,7 @@ import (
 	"github.com/HardDie/fsentry/internal/entity"
 	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
+	serviceEntry "github.com/HardDie/fsentry/internal/service/entry"
 	serviceFolder "github.com/HardDie/fsentry/internal/service/folder"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -20,13 +21,7 @@ type IFSEntry interface {
 	List(path ...string) (*entity.List, error)
 
 	serviceFolder.Folder
-
-	CreateEntry(name string, data interface{}, path ...string) error
-	GetEntry(name string, path ...string) (*entity.Entry, error)
-	MoveEntry(oldName, newName string, path ...string) error
-	UpdateEntry(name string, data interface{}, path ...string) error
-	RemoveEntry(name string, path ...string) error
-	DuplicateEntry(srcName, dstName string, path ...string) error
+	serviceEntry.Entry
 
 	CreateBinary(name string, data []byte, path ...string) error
 	GetBinary(name string, path ...string) ([]byte, error)
@@ -43,6 +38,7 @@ type FSEntry struct {
 	fs            repFS.FS
 	serviceCommon serviceCommon.Common
 	serviceFolder.Folder
+	serviceEntry.Entry
 }
 
 var (
@@ -66,6 +62,7 @@ func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 	}
 	res.serviceCommon = serviceCommon.NewCommon(res.root, res.fs)
 	res.Folder = serviceFolder.NewFolder(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
+	res.Entry = serviceEntry.NewEntry(res.root, &res.rwm, res.isPretty, res.fs, res.serviceCommon)
 	return res
 }
 
@@ -121,187 +118,6 @@ func (db *FSEntry) List(path ...string) (*entity.List, error) {
 
 	fullPath := db.serviceCommon.BuildPath("", path...)
 	return db.fs.List(fullPath)
-}
-
-// Entry
-
-func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(name) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsEntryNotExist(name, path...)
-	if err != nil {
-		return err
-	}
-
-	entry := entity.NewEntry(name, data, db.isPretty)
-	err = db.fs.CreateEntry(fullPath, entry, db.isPretty)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) {
-	db.rwm.RLock()
-	defer db.rwm.RUnlock()
-
-	if utils.NameToID(name) == "" {
-		return nil, fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsEntryExist(name, path...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get info from file
-	entry, err := db.fs.GetEntry(fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return entry, nil
-}
-func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(oldName) == "" || utils.NameToID(newName) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	// Check if source entry exist
-	fullOldPath, err := db.serviceCommon.IsEntryExist(oldName, path...)
-	if err != nil {
-		return err
-	}
-
-	// Read old entry
-	entry, err := db.fs.GetEntry(fullOldPath)
-	if err != nil {
-		return err
-	}
-
-	entry.SetName(newName).UpdatedNow()
-
-	var fullNewPath string
-	// If entries have same ID
-	if utils.NameToID(oldName) != utils.NameToID(newName) {
-		// Check if destination entry not exist
-		fullNewPath, err = db.serviceCommon.IsEntryNotExist(newName, path...)
-		if err != nil {
-			return err
-		}
-	} else {
-		fullNewPath = fullOldPath
-	}
-
-	// Remove old entry
-	err = db.fs.RemoveEntry(fullOldPath)
-	if err != nil {
-		return err
-	}
-
-	// Create new entry
-	err = db.fs.CreateEntry(fullNewPath, entry, db.isPretty)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(name) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsEntryExist(name, path...)
-	if err != nil {
-		return err
-	}
-
-	// Get entry from file
-	entry, err := db.fs.GetEntry(fullPath)
-	if err != nil {
-		return err
-	}
-
-	err = entry.UpdateData(data, db.isPretty)
-	if err != nil {
-		return err
-	}
-
-	// Update entry file
-	err = db.fs.CreateEntry(fullPath, entry, db.isPretty)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) RemoveEntry(name string, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(name) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	fullPath, err := db.serviceCommon.IsEntryExist(name, path...)
-	if err != nil {
-		return err
-	}
-
-	err = db.fs.RemoveEntry(fullPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error {
-	db.rwm.Lock()
-	defer db.rwm.Unlock()
-
-	if utils.NameToID(srcName) == "" || utils.NameToID(dstName) == "" {
-		return fsentry_error.ErrorBadName
-	}
-
-	// Check if source entry exist
-	fullSrcPath, err := db.serviceCommon.IsEntryExist(srcName, path...)
-	if err != nil {
-		return err
-	}
-
-	// Check if destination entry not exist
-	fullDstPath, err := db.serviceCommon.IsEntryNotExist(dstName, path...)
-	if err != nil {
-		return err
-	}
-
-	// Get entry from file
-	entry, err := db.fs.GetEntry(fullSrcPath)
-	if err != nil {
-		return err
-	}
-
-	entry.SetName(dstName).FlushTime()
-
-	// Create entry file
-	err = db.fs.CreateEntry(fullDstPath, entry, db.isPretty)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Binary
