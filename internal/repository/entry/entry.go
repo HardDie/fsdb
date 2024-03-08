@@ -1,17 +1,9 @@
 package entry
 
 import (
-	"encoding/json"
-	"log"
-	"os"
-	"path/filepath"
-
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
-)
-
-const (
-	InfoFile = ".info.json"
+	"github.com/HardDie/fsentry/internal/repository/common"
+	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
 )
 
 type Entry interface {
@@ -20,123 +12,57 @@ type Entry interface {
 	RemoveEntry(path string) error
 	IsFileExist(path string) (isExist bool, err error)
 	MoveObject(oldPath, newPath string) error
-	CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error
-	GetInfo(path string) (*entity.FolderInfo, error)
 }
 
-type entry struct{}
-
-func NewEntry() Entry {
-	return entry{}
+type entry struct {
+	fs repositoryFS.FS
 }
 
+func NewEntry(fs repositoryFS.FS) Entry {
+	return entry{
+		fs: fs,
+	}
+}
+
+// CreateEntry allows you to create a json file with default metadata such as created_at and updated_at,
+// as well as a custom payload. Entry is the main object for storing information in the fsentry library.
 func (r entry) CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
-	file, err := os.Create(path)
+	data, err := common.DataToJSON(entry, isIndent)
 	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return err
 	}
-	defer func() {
-		if err = file.Sync(); err != nil {
-			log.Printf("CreateEntry(): error sync file %q: %s", path, err.Error())
-		}
-		if err = file.Close(); err != nil {
-			log.Printf("CreateEntry(): error close file %q: %s", path, err.Error())
-		}
-	}()
-
-	enc := json.NewEncoder(file)
-	if isIndent {
-		enc.SetIndent("", "	")
-	}
-	err = enc.Encode(entry)
+	err = r.fs.CreateFile(path, data)
 	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return err
 	}
 	return nil
 }
+
+// GetEntry attempts to read the specified path from the file system and parse it as an Entry object.
 func (r entry) GetEntry(path string) (*entity.Entry, error) {
-	file, err := os.Open(path)
+	data, err := r.fs.ReadFile(path)
 	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return nil, err
 	}
-	defer file.Close()
-
-	info := &entity.Entry{}
-	err = json.NewDecoder(file).Decode(info)
+	info, err := common.JSONToData[entity.Entry](data)
 	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return nil, err
 	}
 	return info, nil
 }
+
+// RemoveEntry allows you to remove an Entry object from a folder.
+// If you pass the path to another object, it should return an error.
 func (r entry) RemoveEntry(path string) error {
-	err := os.Remove(path)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.RemoveFile(path)
 }
+
+// IsFileExist checks if an object that is a file, not a folder, exists at the specified path.
 func (r entry) IsFileExist(path string) (isExist bool, err error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// entry not exist
-			return false, nil
-		}
-		// other error
-		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-
-	// check if it is not a folder
-	if stat.IsDir() {
-		return false, fsentry_error.ErrorBadPath
-	}
-
-	// entry exists
-	return true, nil
+	return r.fs.IsFileExist(path)
 }
+
+// MoveObject allows you to rename an Entry object or move it to a different path.
 func (r entry) MoveObject(oldPath, newPath string) error {
-	err := os.Rename(oldPath, newPath)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
-func (r entry) CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error {
-	file, err := os.Create(filepath.Join(path, InfoFile))
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	defer func() {
-		var err error
-		if err = file.Sync(); err != nil {
-			log.Printf("CreateInfo(): error sync file %q: %s", path, err.Error())
-		}
-		if err = file.Close(); err != nil {
-			log.Printf("CreateInfo(): error close file %q: %s", path, err.Error())
-		}
-	}()
-
-	enc := json.NewEncoder(file)
-	if isIndent {
-		enc.SetIndent("", "	")
-	}
-	err = enc.Encode(data)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
-func (r entry) GetInfo(path string) (*entity.FolderInfo, error) {
-	file, err := os.Open(filepath.Join(path, InfoFile))
-	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	defer file.Close()
-
-	info := &entity.FolderInfo{}
-	err = json.NewDecoder(file).Decode(info)
-	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return info, nil
+	return r.fs.Rename(oldPath, newPath)
 }

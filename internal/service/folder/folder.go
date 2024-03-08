@@ -95,7 +95,7 @@ func (s *folder) CreateFolder(name string, data interface{}, path ...string) (*e
 
 	// Create info file
 	info := entity.NewFolderInfo(name, data, s.isPretty)
-	err = s.repEntry.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repFolder.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (s *folder) GetFolder(name string, path ...string) (*entity.FolderInfo, err
 	}
 
 	// Get info from file
-	info, err := s.repEntry.GetInfo(fullPath)
+	info, err := s.repFolder.GetInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *folder) MoveFolder(oldName, newName string, path ...string) (*entity.Fo
 	}
 
 	// Get info from file
-	info, err := s.repEntry.GetInfo(fullOldPath)
+	info, err := s.repFolder.GetInfo(fullOldPath)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (s *folder) MoveFolder(oldName, newName string, path ...string) (*entity.Fo
 	info.SetName(newName).UpdatedNow()
 
 	// Update info file
-	err = s.repEntry.CreateInfo(fullOldPath, info, s.isPretty)
+	err = s.repFolder.CreateInfo(fullOldPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (s *folder) UpdateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Get info from file
-	info, err := s.repEntry.GetInfo(fullPath)
+	info, err := s.repFolder.GetInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s *folder) UpdateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Update info file
-	err = s.repEntry.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repFolder.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func (s *folder) DuplicateFolder(srcName, dstName string, path ...string) (*enti
 	}
 
 	// Get info from file
-	info, err := s.repEntry.GetInfo(fullDstPath)
+	info, err := s.repFolder.GetInfo(fullDstPath)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (s *folder) DuplicateFolder(srcName, dstName string, path ...string) (*enti
 	info.SetName(dstName).FlushTime()
 
 	// Update info file
-	err = s.repEntry.CreateInfo(fullDstPath, info, s.isPretty)
+	err = s.repFolder.CreateInfo(fullDstPath, info, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (s *folder) UpdateFolderNameWithoutTimestamp(name, newName string, path ...
 	}
 
 	// Get info from file
-	info, err := s.repEntry.GetInfo(fullPath)
+	info, err := s.repFolder.GetInfo(fullPath)
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ func (s *folder) UpdateFolderNameWithoutTimestamp(name, newName string, path ...
 	info.Name = fsentry_types.QuotedString(newName)
 
 	// Update info file
-	err = s.repEntry.CreateInfo(fullPath, info, s.isPretty)
+	err = s.repFolder.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return err
 	}

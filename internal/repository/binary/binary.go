@@ -1,11 +1,7 @@
 package binary
 
 import (
-	"io"
-	"log"
-	"os"
-
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
 )
 
 type Binary interface {
@@ -15,49 +11,26 @@ type Binary interface {
 }
 
 type binary struct {
+	fs repositoryFS.FS
 }
 
-func NewBinary() Binary {
-	return binary{}
+func NewBinary(fs repositoryFS.FS) Binary {
+	return binary{
+		fs: fs,
+	}
 }
 
+// CreateBinary allows you to create a *.bin file at the specified path.
 func (r binary) CreateBinary(path string, data []byte) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	defer func() {
-		if err = file.Sync(); err != nil {
-			log.Printf("CreateBinary(): error sync file %q: %s", path, err.Error())
-		}
-		if err = file.Close(); err != nil {
-			log.Printf("CreateBinary(): error close file %q: %s", path, err.Error())
-		}
-	}()
-
-	_, err = file.Write(data)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.CreateFile(path, data)
 }
+
+// GetBinary checks if the file can be accessed, reads all the contents from it and returns it.
 func (r binary) GetBinary(path string) ([]byte, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return data, nil
+	return r.fs.ReadFile(path)
 }
+
+// RemoveBinary allows you to delete a binary file.
 func (r binary) RemoveBinary(path string) error {
-	err := os.Remove(path)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.RemoveFile(path)
 }

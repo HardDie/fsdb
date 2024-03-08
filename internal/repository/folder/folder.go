@@ -1,92 +1,64 @@
 package folder
 
 import (
-	"os"
 	"path/filepath"
 
-	"github.com/otiai10/copy"
-
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	"github.com/HardDie/fsentry/internal/repository/common"
+	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
 )
 
 const (
-	DirPerm = 0755
+	InfoFile = ".info.json"
 )
 
 type Folder interface {
-	IsFolderExist(path string) (isExist bool, err error)
 	CreateFolder(path string) error
 	CreateAllFolder(path string) error
 	CopyFolder(srcPath, dstPath string) error
 	RemoveFolder(path string) error
 	List(path string) (*entity.List, error)
+	CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error
+	GetInfo(path string) (*entity.FolderInfo, error)
+	IsFolderExist(path string) (isExist bool, err error)
 }
 
-type folder struct{}
-
-func NewFolder() Folder {
-	return folder{}
+type folder struct {
+	fs repositoryFS.FS
 }
 
-func (r folder) IsFolderExist(path string) (isExist bool, err error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// folder not exist
-			return false, nil
-		}
-		// other error
-		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+func NewFolder(fs repositoryFS.FS) Folder {
+	return folder{
+		fs: fs,
 	}
-
-	// check if it is a folder
-	if !stat.IsDir() {
-		return false, fsentry_error.ErrorBadPath
-	}
-
-	// folder exists
-	return true, nil
 }
+
+// CreateFolder allows you to create a folder in the file system.
 func (r folder) CreateFolder(path string) error {
-	err := os.Mkdir(path, DirPerm)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.CreateFolder(path)
 }
+
+// CreateAllFolder allows you to create a folder in the file system,
+// and if some intermediate folders in the desired path do not exist, they will also be created.
 func (r folder) CreateAllFolder(path string) error {
-	err := os.MkdirAll(path, DirPerm)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.CreateAllFolder(path)
 }
+
+// CopyFolder will recursively copy the source folder to the desired destination path.
 func (r folder) CopyFolder(srcPath, dstPath string) error {
-	err := copy.Copy(srcPath, dstPath)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.CopyFolder(srcPath, dstPath)
 }
+
+// RemoveFolder will delete the desired folder even if it is not empty with all the data it contains.
 func (r folder) RemoveFolder(path string) error {
-	err := os.RemoveAll(path)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
+	return r.fs.RemoveFolder(path)
 }
 
+// List will return two separate slices with folders in the specified directory and entries.
 func (r folder) List(path string) (*entity.List, error) {
-	f, err := os.Open(path)
+	files, err := r.fs.List(path)
 	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	defer f.Close()
-
-	files, err := f.Readdir(0)
-	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return nil, err
 	}
 
 	res := &entity.List{}
@@ -106,4 +78,36 @@ func (r folder) List(path string) (*entity.List, error) {
 	}
 
 	return res, nil
+}
+
+// CreateInfo allows you to create an .info.json file with metadata for the Folder object.
+func (r folder) CreateInfo(path string, info *entity.FolderInfo, isIndent bool) error {
+	data, err := common.DataToJSON(info, isIndent)
+	if err != nil {
+		return err
+	}
+	err = r.fs.CreateFile(filepath.Join(path, InfoFile), data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetInfo reads metadata about the Folder object. If .info.json does not exist inside a folder,
+// that folder will not be considered a Folder object in fsentry terms.
+func (r folder) GetInfo(path string) (*entity.FolderInfo, error) {
+	data, err := r.fs.ReadFile(filepath.Join(path, InfoFile))
+	if err != nil {
+		return nil, err
+	}
+	info, err := common.JSONToData[entity.FolderInfo](data)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+// IsFolderExist checks if an object that is a folder, exists at the specified path.
+func (r folder) IsFolderExist(path string) (isExist bool, err error) {
+	return r.fs.IsFolderExist(path)
 }
