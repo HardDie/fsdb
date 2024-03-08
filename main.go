@@ -1,3 +1,6 @@
+// fsentry
+//
+// Allows storing hierarchical data in files and folders on the file system with json descriptions and creation/update timestamps.
 package fsentry
 
 import (
@@ -5,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/internal/fsutils"
+	repFS "github.com/HardDie/fsentry/internal/repository/fs"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
@@ -42,6 +45,8 @@ type FSEntry struct {
 	rwm  sync.RWMutex
 
 	isPretty bool
+
+	fs repFS.FS
 }
 
 var (
@@ -58,6 +63,7 @@ func WithPretty() func(fs *FSEntry) {
 func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 	res := &FSEntry{
 		root: root,
+		fs:   repFS.NewFS(),
 	}
 	for _, op := range ops {
 		op(res)
@@ -67,30 +73,33 @@ func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 
 // Basic
 
+// Init check if a repository folder has been created and if not, create one.
 func (db *FSEntry) Init() error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
 	// Check if db folder exist
-	isExist, err := fsutils.IsFolderExist(db.root)
+	isExist, err := db.fs.IsFolderExist(db.root)
 	if err != nil {
 		return err
 	}
 	if isExist {
 		return nil
 	}
-	err = fsutils.CreateAllFolder(db.root)
+	err = db.fs.CreateAllFolder(db.root)
 	if err != nil {
 		return err
 	}
 	return nil
 }
+
+// Drop if you want to delete the fsentry repository you can use this method.
 func (db *FSEntry) Drop() error {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 
 	// Check if db folder exist
-	isExist, err := fsutils.IsFolderExist(db.root)
+	isExist, err := db.fs.IsFolderExist(db.root)
 	if err != nil {
 		return err
 	}
@@ -99,23 +108,45 @@ func (db *FSEntry) Drop() error {
 	}
 
 	// Remove db folder
-	err = fsutils.RemoveFolder(db.root)
+	err = db.fs.RemoveFolder(db.root)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
+// List allows you to get a list of objects (folders and entries) on the selected path.
 func (db *FSEntry) List(path ...string) (*entity.List, error) {
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
 
 	fullPath := db.buildPath("", path...)
-	return fsutils.List(fullPath)
+	return db.fs.List(fullPath)
 }
 
-// Folder
-
+// CreateFolder you can use this method to create a folder within the repository.
+// name - Name of the folder to be created.
+// data - If you want to store some payload inside the json metadata you can pass it here.
+// path - Optional value if you want to create a folder inside an existing folder. If you want to create a folder in the root of the storage, you can leave this value empty.
+//
+// As the result you receive JSON metadata file that was created in the created folder.
+//
+// Examples:
+//
+// Create a folder in the root of the storage:
+//
+//	resp, err := db.CreateFolder("f1", nil)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+// Create a folder inside an existing folder:
+//
+//	resp, err := db.CreateFolder("f2", nil, "f1")
+//	if err != nil {
+//		panic(err)
+//	}
 func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) (*entity.FolderInfo, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
@@ -130,14 +161,14 @@ func (db *FSEntry) CreateFolder(name string, data interface{}, path ...string) (
 	}
 
 	// Create folder
-	err = fsutils.CreateFolder(fullPath)
+	err = db.fs.CreateFolder(fullPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create info file
 	info := entity.NewFolderInfo(name, data, db.isPretty)
-	err = fsutils.CreateInfo(fullPath, info, db.isPretty)
+	err = db.fs.CreateInfo(fullPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +189,7 @@ func (db *FSEntry) GetFolder(name string, path ...string) (*entity.FolderInfo, e
 	}
 
 	// Get info from file
-	info, err := fsutils.GetInfo(fullPath)
+	info, err := db.fs.GetInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +211,7 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 	}
 
 	// Get info from file
-	info, err := fsutils.GetInfo(fullOldPath)
+	info, err := db.fs.GetInfo(fullOldPath)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +219,7 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 	info.SetName(newName).UpdatedNow()
 
 	// Update info file
-	err = fsutils.CreateInfo(fullOldPath, info, db.isPretty)
+	err = db.fs.CreateInfo(fullOldPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +236,7 @@ func (db *FSEntry) MoveFolder(oldName, newName string, path ...string) (*entity.
 	}
 
 	// Rename folder
-	err = fsutils.MoveObject(fullOldPath, fullNewPath)
+	err = db.fs.MoveObject(fullOldPath, fullNewPath)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +257,7 @@ func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) (
 	}
 
 	// Get info from file
-	info, err := fsutils.GetInfo(fullPath)
+	info, err := db.fs.GetInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +268,7 @@ func (db *FSEntry) UpdateFolder(name string, data interface{}, path ...string) (
 	}
 
 	// Update info file
-	err = fsutils.CreateInfo(fullPath, info, db.isPretty)
+	err = db.fs.CreateInfo(fullPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +288,7 @@ func (db *FSEntry) RemoveFolder(name string, path ...string) error {
 		return err
 	}
 
-	err = fsutils.RemoveFolder(fullPath)
+	err = db.fs.RemoveFolder(fullPath)
 	if err != nil {
 		return err
 	}
@@ -285,13 +316,13 @@ func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) (*en
 	}
 
 	// Copy folder
-	err = fsutils.CopyFolder(fullSrcPath, fullDstPath)
+	err = db.fs.CopyFolder(fullSrcPath, fullDstPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get info from file
-	info, err := fsutils.GetInfo(fullDstPath)
+	info, err := db.fs.GetInfo(fullDstPath)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +330,7 @@ func (db *FSEntry) DuplicateFolder(srcName, dstName string, path ...string) (*en
 	info.SetName(dstName).FlushTime()
 
 	// Update info file
-	err = fsutils.CreateInfo(fullDstPath, info, db.isPretty)
+	err = db.fs.CreateInfo(fullDstPath, info, db.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +351,7 @@ func (db *FSEntry) UpdateFolderNameWithoutTimestamp(name, newName string, path .
 	}
 
 	// Get info from file
-	info, err := fsutils.GetInfo(fullPath)
+	info, err := db.fs.GetInfo(fullPath)
 	if err != nil {
 		return err
 	}
@@ -329,7 +360,7 @@ func (db *FSEntry) UpdateFolderNameWithoutTimestamp(name, newName string, path .
 	info.Name = fsentry_types.QuotedString(newName)
 
 	// Update info file
-	err = fsutils.CreateInfo(fullPath, info, db.isPretty)
+	err = db.fs.CreateInfo(fullPath, info, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -353,7 +384,7 @@ func (db *FSEntry) CreateEntry(name string, data interface{}, path ...string) er
 	}
 
 	entry := entity.NewEntry(name, data, db.isPretty)
-	err = fsutils.CreateEntry(fullPath, entry, db.isPretty)
+	err = db.fs.CreateEntry(fullPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -374,7 +405,7 @@ func (db *FSEntry) GetEntry(name string, path ...string) (*entity.Entry, error) 
 	}
 
 	// Get info from file
-	entry, err := fsutils.GetEntry(fullPath)
+	entry, err := db.fs.GetEntry(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +427,7 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	}
 
 	// Read old entry
-	entry, err := fsutils.GetEntry(fullOldPath)
+	entry, err := db.fs.GetEntry(fullOldPath)
 	if err != nil {
 		return err
 	}
@@ -416,13 +447,13 @@ func (db *FSEntry) MoveEntry(oldName, newName string, path ...string) error {
 	}
 
 	// Remove old entry
-	err = fsutils.RemoveEntry(fullOldPath)
+	err = db.fs.RemoveEntry(fullOldPath)
 	if err != nil {
 		return err
 	}
 
 	// Create new entry
-	err = fsutils.CreateEntry(fullNewPath, entry, db.isPretty)
+	err = db.fs.CreateEntry(fullNewPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -443,7 +474,7 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 	}
 
 	// Get entry from file
-	entry, err := fsutils.GetEntry(fullPath)
+	entry, err := db.fs.GetEntry(fullPath)
 	if err != nil {
 		return err
 	}
@@ -454,7 +485,7 @@ func (db *FSEntry) UpdateEntry(name string, data interface{}, path ...string) er
 	}
 
 	// Update entry file
-	err = fsutils.CreateEntry(fullPath, entry, db.isPretty)
+	err = db.fs.CreateEntry(fullPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -474,7 +505,7 @@ func (db *FSEntry) RemoveEntry(name string, path ...string) error {
 		return err
 	}
 
-	err = fsutils.RemoveEntry(fullPath)
+	err = db.fs.RemoveEntry(fullPath)
 	if err != nil {
 		return err
 	}
@@ -502,7 +533,7 @@ func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error
 	}
 
 	// Get entry from file
-	entry, err := fsutils.GetEntry(fullSrcPath)
+	entry, err := db.fs.GetEntry(fullSrcPath)
 	if err != nil {
 		return err
 	}
@@ -510,7 +541,7 @@ func (db *FSEntry) DuplicateEntry(srcName, dstName string, path ...string) error
 	entry.SetName(dstName).FlushTime()
 
 	// Create entry file
-	err = fsutils.CreateEntry(fullDstPath, entry, db.isPretty)
+	err = db.fs.CreateEntry(fullDstPath, entry, db.isPretty)
 	if err != nil {
 		return err
 	}
@@ -533,7 +564,7 @@ func (db *FSEntry) CreateBinary(name string, data []byte, path ...string) error 
 		return err
 	}
 
-	err = fsutils.CreateBinary(fullPath, data)
+	err = db.fs.CreateBinary(fullPath, data)
 	if err != nil {
 		return err
 	}
@@ -554,7 +585,7 @@ func (db *FSEntry) GetBinary(name string, path ...string) ([]byte, error) {
 	}
 
 	// Get data from file
-	data, err := fsutils.GetBinary(fullPath)
+	data, err := db.fs.GetBinary(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -582,7 +613,7 @@ func (db *FSEntry) MoveBinary(oldName, newName string, path ...string) error {
 	}
 
 	// Rename binary
-	err = fsutils.MoveObject(fullOldPath, fullNewPath)
+	err = db.fs.MoveObject(fullOldPath, fullNewPath)
 	if err != nil {
 		return err
 	}
@@ -603,7 +634,7 @@ func (db *FSEntry) UpdateBinary(name string, data []byte, path ...string) error 
 	}
 
 	// Update binary file
-	err = fsutils.CreateBinary(fullPath, data)
+	err = db.fs.CreateBinary(fullPath, data)
 	if err != nil {
 		return err
 	}
@@ -623,7 +654,7 @@ func (db *FSEntry) RemoveBinary(name string, path ...string) error {
 		return err
 	}
 
-	err = fsutils.RemoveBinary(fullPath)
+	err = db.fs.RemoveBinary(fullPath)
 	if err != nil {
 		return err
 	}
@@ -646,7 +677,7 @@ func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 	fullPath := db.buildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -655,7 +686,7 @@ func (db *FSEntry) isFolderExist(name string, path ...string) (string, error) {
 	}
 
 	// Check if destination folder exist
-	isExist, err = fsutils.IsFolderExist(fullPath)
+	isExist, err = db.fs.IsFolderExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -674,7 +705,7 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 	fullPath := db.buildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -683,7 +714,7 @@ func (db *FSEntry) isFolderNotExist(name string, path ...string) (string, error)
 	}
 
 	// Check if destination folder exist
-	isExist, err = fsutils.IsFolderExist(fullPath)
+	isExist, err = db.fs.IsFolderExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -716,7 +747,7 @@ func (db *FSEntry) isFileExist(name, ext string, path ...string) (string, error)
 	fullPath := db.buildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -725,7 +756,7 @@ func (db *FSEntry) isFileExist(name, ext string, path ...string) (string, error)
 	}
 
 	// Check if destination entry exist
-	isExist, err = fsutils.IsFileExist(fullPath)
+	isExist, err = db.fs.IsFileExist(fullPath)
 	if err != nil {
 		return "", err
 	}
@@ -745,7 +776,7 @@ func (db *FSEntry) isFileNotExist(name, ext string, path ...string) (string, err
 	fullPath := db.buildPath(id, path...)
 
 	// Check if root folder exist
-	isExist, err := fsutils.IsFolderExist(filepath.Dir(fullPath))
+	isExist, err := db.fs.IsFolderExist(filepath.Dir(fullPath))
 	if err != nil {
 		return "", err
 	}
@@ -754,7 +785,7 @@ func (db *FSEntry) isFileNotExist(name, ext string, path ...string) (string, err
 	}
 
 	// Check if destination entry exist
-	isExist, err = fsutils.IsFileExist(fullPath)
+	isExist, err = db.fs.IsFileExist(fullPath)
 	if err != nil {
 		return "", err
 	}

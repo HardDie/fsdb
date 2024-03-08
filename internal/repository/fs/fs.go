@@ -1,4 +1,4 @@
-package fsutils
+package fs
 
 import (
 	"encoding/json"
@@ -17,7 +17,82 @@ const (
 	InfoFile = ".info.json"
 )
 
-func List(path string) (*entity.List, error) {
+type FS interface {
+	IsFolderExist(path string) (isExist bool, err error)
+	CreateFolder(path string) error
+	CreateAllFolder(path string) error
+	CopyFolder(srcPath, dstPath string) error
+	RemoveFolder(path string) error
+	List(path string) (*entity.List, error)
+
+	CreateEntry(path string, entry *entity.Entry, isIndent bool) error
+	GetEntry(path string) (*entity.Entry, error)
+	RemoveEntry(path string) error
+	CreateBinary(path string, data []byte) error
+	GetBinary(path string) ([]byte, error)
+	RemoveBinary(path string) error
+	IsFileExist(path string) (isExist bool, err error)
+	MoveObject(oldPath, newPath string) error
+	CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error
+	GetInfo(path string) (*entity.FolderInfo, error)
+}
+
+type fs struct {
+}
+
+func NewFS() FS {
+	return fs{}
+}
+
+func (r fs) IsFolderExist(path string) (isExist bool, err error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// folder not exist
+			return false, nil
+		}
+		// other error
+		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+
+	// check if it is a folder
+	if !stat.IsDir() {
+		return false, fsentry_error.ErrorBadPath
+	}
+
+	// folder exists
+	return true, nil
+}
+func (r fs) CreateFolder(path string) error {
+	err := os.Mkdir(path, DirPerm)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+func (r fs) CreateAllFolder(path string) error {
+	err := os.MkdirAll(path, DirPerm)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+func (r fs) CopyFolder(srcPath, dstPath string) error {
+	err := copy.Copy(srcPath, dstPath)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+func (r fs) RemoveFolder(path string) error {
+	err := os.RemoveAll(path)
+	if err != nil {
+		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return nil
+}
+
+func (r fs) List(path string) (*entity.List, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -50,55 +125,7 @@ func List(path string) (*entity.List, error) {
 	return res, nil
 }
 
-func IsFolderExist(path string) (isExist bool, err error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// folder not exist
-			return false, nil
-		}
-		// other error
-		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-
-	// check if it is a folder
-	if !stat.IsDir() {
-		return false, fsentry_error.ErrorBadPath
-	}
-
-	// folder exists
-	return true, nil
-}
-func CreateFolder(path string) error {
-	err := os.Mkdir(path, DirPerm)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
-func CreateAllFolder(path string) error {
-	err := os.MkdirAll(path, DirPerm)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
-func CopyFolder(srcPath, dstPath string) error {
-	err := copy.Copy(srcPath, dstPath)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
-func RemoveFolder(path string) error {
-	err := os.RemoveAll(path)
-	if err != nil {
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
-	}
-	return nil
-}
-
-func CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
+func (r fs) CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -118,7 +145,7 @@ func CreateEntry(path string, entry *entity.Entry, isIndent bool) error {
 	}
 	return nil
 }
-func GetEntry(path string) (*entity.Entry, error) {
+func (r fs) GetEntry(path string) (*entity.Entry, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -132,15 +159,14 @@ func GetEntry(path string) (*entity.Entry, error) {
 	}
 	return info, nil
 }
-func RemoveEntry(path string) error {
+func (r fs) RemoveEntry(path string) error {
 	err := os.Remove(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
-
-func CreateBinary(path string, data []byte) error {
+func (r fs) CreateBinary(path string, data []byte) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -156,7 +182,7 @@ func CreateBinary(path string, data []byte) error {
 	}
 	return nil
 }
-func GetBinary(path string) ([]byte, error) {
+func (r fs) GetBinary(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -169,15 +195,14 @@ func GetBinary(path string) ([]byte, error) {
 	}
 	return data, nil
 }
-func RemoveBinary(path string) error {
+func (r fs) RemoveBinary(path string) error {
 	err := os.Remove(path)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
-
-func IsFileExist(path string) (isExist bool, err error) {
+func (r fs) IsFileExist(path string) (isExist bool, err error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -196,16 +221,14 @@ func IsFileExist(path string) (isExist bool, err error) {
 	// entry exists
 	return true, nil
 }
-
-func MoveObject(oldPath, newPath string) error {
+func (r fs) MoveObject(oldPath, newPath string) error {
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
 }
-
-func CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error {
+func (r fs) CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error {
 	file, err := os.Create(filepath.Join(path, InfoFile))
 	if err != nil {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -225,7 +248,7 @@ func CreateInfo(path string, data *entity.FolderInfo, isIndent bool) error {
 	}
 	return nil
 }
-func GetInfo(path string) (*entity.FolderInfo, error) {
+func (r fs) GetInfo(path string) (*entity.FolderInfo, error) {
 	file, err := os.Open(filepath.Join(path, InfoFile))
 	if err != nil {
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
