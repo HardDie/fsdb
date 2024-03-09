@@ -6,6 +6,7 @@ import (
 	iofs "io/fs"
 	"log"
 	"os"
+	"syscall"
 
 	"github.com/otiai10/copy"
 
@@ -116,17 +117,22 @@ func (r fs) ReadFile(path string) ([]byte, error) {
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		// TODO: process different types of errors
+		if e := isKnownError(err); e != nil {
+			return nil, e
+		}
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return data, nil
 }
 
 // RemoveFile allows you to delete a file or an empty folder.
+// If the folder is not empty, an ErrorExist error will be returned.
 func (r fs) RemoveFile(path string) error {
 	err := os.Remove(path)
 	if err != nil {
-		// TODO: process different types of errors
+		if e := isKnownError(err); e != nil {
+			return e
+		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
@@ -146,10 +152,13 @@ func (r fs) CreateFolder(path string) error {
 
 // CreateAllFolder allows you to create a folder in the file system,
 // and if some intermediate folders in the desired path do not exist, they will also be created.
+// If the specified folder already exists, there will be no error.
 func (r fs) CreateAllFolder(path string) error {
 	err := os.MkdirAll(path, CreateDirPerm)
 	if err != nil {
-		// TODO: process different types of errors
+		if e := isKnownError(err); e != nil {
+			return e
+		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
@@ -159,6 +168,9 @@ func (r fs) CreateAllFolder(path string) error {
 func (r fs) RemoveFolder(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
+		if e := isKnownError(err); e != nil {
+			return e
+		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	return nil
@@ -253,6 +265,15 @@ func isKnownError(err error) error {
 			return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
 		case os.IsPermission(pathErr):
 			return fsentry_error.Wrap(err, fsentry_error.ErrorPermissions)
+		}
+	}
+	var syscallErr syscall.Errno
+	if errors.As(err, &syscallErr) {
+		switch uintptr(syscallErr) {
+		case 20:
+			return fsentry_error.Wrap(err, fsentry_error.ErrorNotDirectory)
+		case 21:
+			return fsentry_error.Wrap(err, fsentry_error.ErrorNotFile)
 		}
 	}
 	return nil
