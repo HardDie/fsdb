@@ -14,6 +14,9 @@ var (
 	ErrorNotFile      = fmt.Errorf("not file")
 	ErrorNotDirectory = fmt.Errorf("not directory")
 	ErrorInternal     = fmt.Errorf("internal error")
+	// windows.
+	ErrorIncorrectFunction = fmt.Errorf("incorrect function")
+	ErrorIsDirectory       = fmt.Errorf("is directory")
 )
 
 func Wrap(err, localErr error) error {

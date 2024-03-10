@@ -140,8 +140,8 @@ func TestReadFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("not file, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotFile) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotFile, err)
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
 		}
 	})
 
@@ -278,8 +278,8 @@ func TestUpdateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("not file, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotFile) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotFile, err)
+		if !errors.Is(err, fsentry_error.ErrorNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
 		}
 	})
 
@@ -675,8 +675,8 @@ func TestCreateAllFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotDirectory) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotDirectory, err)
+		if !errors.Is(err, fsentry_error.ErrorExist) {
+			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
 		}
 	})
 
@@ -829,8 +829,17 @@ func TestRemoveFolder(t *testing.T) {
 		}
 
 		err = f.RemoveFolder(folderPath)
-		if err != nil {
-			t.Fatal(err)
+		if runtime.GOOS == "windows" {
+			if err == nil {
+				t.Fatal("on windows must be error!")
+			}
+			if !errors.Is(err, fsentry_error.ErrorPermissions) {
+				t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+			}
+		} else {
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 	})
 }

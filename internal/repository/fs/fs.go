@@ -6,6 +6,7 @@ import (
 	iofs "io/fs"
 	"log"
 	"os"
+	"runtime"
 	"syscall"
 
 	"github.com/otiai10/copy"
@@ -46,6 +47,9 @@ func (r fs) CreateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, CreateFileFlags, CreateFilePerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
+			if errors.Is(e, fsentry_error.ErrorIsDirectory) {
+				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
+			}
 			return e
 		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -75,6 +79,12 @@ func (r fs) UpdateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, UpdateFileFlags, CreateFilePerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
+			switch {
+			case errors.Is(e, fsentry_error.ErrorNotFile):
+				return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+			case errors.Is(e, fsentry_error.ErrorIsDirectory):
+				return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+			}
 			return e
 		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -118,6 +128,12 @@ func (r fs) ReadFile(path string) ([]byte, error) {
 	data, err := io.ReadAll(file)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
+			switch {
+			case errors.Is(e, fsentry_error.ErrorNotFile):
+				return nil, fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+			case errors.Is(e, fsentry_error.ErrorIncorrectFunction):
+				return nil, fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+			}
 			return nil, e
 		}
 		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -157,6 +173,12 @@ func (r fs) CreateAllFolder(path string) error {
 	err := os.MkdirAll(path, CreateDirPerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
+			switch {
+			case errors.Is(e, fsentry_error.ErrorNotDirectory):
+				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
+			case errors.Is(e, fsentry_error.ErrorNotExist): // windows do not treat files and folders in the same way
+				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
+			}
 			return e
 		}
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
@@ -274,6 +296,14 @@ func isKnownError(err error) error {
 			return fsentry_error.Wrap(err, fsentry_error.ErrorNotDirectory)
 		case 21:
 			return fsentry_error.Wrap(err, fsentry_error.ErrorNotFile)
+		}
+		if runtime.GOOS == "windows" {
+			switch uintptr(syscallErr) {
+			case 1:
+				return fsentry_error.Wrap(err, fsentry_error.ErrorIncorrectFunction)
+			case 536870954:
+				return fsentry_error.Wrap(err, fsentry_error.ErrorIsDirectory)
+			}
 		}
 	}
 	return nil
