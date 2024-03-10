@@ -9,12 +9,22 @@ import (
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
 )
 
+// FolderInfo is an .info.json file inside each folder created by the fsentry library.
+// The main purpose of this file is to store the original name of the folder,
+// to keep track of the timestamps of the create and update events.
+// But FolderInfo, like Entry files, has the ability to store custom payloads.
 type FolderInfo struct {
-	Id        string                     `json:"id"`
-	Name      fsentry_types.QuotedString `json:"name"`
-	CreatedAt *time.Time                 `json:"createdAt"`
-	UpdatedAt *time.Time                 `json:"updatedAt"`
-	Data      json.RawMessage            `json:"data"`
+	// Id is a name, but it has all special characters removed, all spaces replaced with underscores,
+	// and is shortened to 200 characters because some file systems prohibit files from having long names.
+	Id string `json:"id"`
+	// Name is the original name that was set by the user without any modification.
+	Name fsentry_types.QuotedString `json:"name"`
+	// CreatedAt metadata for each Entry to track the original creation date.
+	CreatedAt *time.Time `json:"createdAt"`
+	// UpdatedAt metadata to keep track of when the Entry was last updated.
+	UpdatedAt *time.Time `json:"updatedAt"`
+	// Data is a custom json payload for custom data.
+	Data json.RawMessage `json:"data"`
 }
 
 func NewFolderInfo(name string, data interface{}, isIndent bool) *FolderInfo {

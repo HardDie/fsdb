@@ -74,7 +74,7 @@ func (r fs) CreateFile(path string, data []byte) error {
 	return nil
 }
 
-// CreateFile allows you to update a file.
+// UpdateFile allows you to update a file.
 func (r fs) UpdateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, UpdateFileFlags, CreateFilePerm)
 	if err != nil {
