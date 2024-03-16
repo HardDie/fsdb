@@ -2,7 +2,7 @@ package utils
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -42,7 +42,7 @@ func FuzzNameToIDFile(f *testing.F) {
 		}
 		defer os.RemoveAll(tmpDirName)
 
-		filePath := path.Join(tmpDirName, resName)
+		filePath := filepath.Join(tmpDirName, resName)
 
 		f, err := os.Create(filePath)
 		if err != nil {
@@ -95,7 +95,7 @@ func FuzzNameToIDFolder(f *testing.F) {
 		}
 		defer os.RemoveAll(tmpDirName)
 
-		filePath := path.Join(tmpDirName, resName)
+		filePath := filepath.Join(tmpDirName, resName)
 
 		err = os.Mkdir(filePath, 0755)
 		if err != nil {
