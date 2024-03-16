@@ -16,7 +16,8 @@ import (
 func main() {
 	// Initializing the fsentry repository.
 	db := fsentry.NewFSEntry("test",
-		fsentry.WithPretty(), // If you want to store json metadata files in a pretty format.
+		// If you want to store json metadata files in a pretty format.
+		fsentry.WithPretty(),
 	)
 
 	// Check if a repository folder has been created and if not, create one.
@@ -24,7 +25,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// If you want to delete the fsentry repository you can user Drop() method.
+	// If you want to delete the fsentry repository you can use Drop() method.
 	// db.Drop()
 }
 ```

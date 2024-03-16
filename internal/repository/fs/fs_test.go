@@ -35,13 +35,15 @@ func TestCreateFile(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
+		filePath := path.Join(dir, "exist")
+
 		f := NewFS()
-		err = f.CreateFile(path.Join(dir, "exist"), []byte("hello"))
+		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = f.CreateFile(path.Join(dir, "exist"), []byte("hello"))
+		err = f.CreateFile(filePath, []byte("hello"))
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
@@ -57,13 +59,15 @@ func TestCreateFile(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
+		filePath := path.Join(dir, "exist")
+
 		f := NewFS()
-		err = f.CreateFolder(path.Join(dir, "exist"))
+		err = f.CreateFolder(filePath)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = f.CreateFile(path.Join(dir, "exist"), []byte("hello"))
+		err = f.CreateFile(filePath, []byte("hello"))
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
@@ -569,13 +573,15 @@ func TestCreateFolder(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
+		folderPath := path.Join(dir, "exist")
+
 		f := NewFS()
-		err = f.CreateFile(path.Join(dir, "exist"), []byte("hello"))
+		err = f.CreateFile(folderPath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = f.CreateFolder(path.Join(dir, "exist"))
+		err = f.CreateFolder(folderPath)
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
