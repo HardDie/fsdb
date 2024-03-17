@@ -19,6 +19,11 @@ test:
 	@echo 'running tests'
 	go test -v -cover -race ./...
 
+.PHONY: test-benchmark
+test-benchmark:
+	@echo 'running benchmarks'
+	go test -v ./... -bench=. -run Benchmark -benchmem
+
 .PHONY: format
 format: install-gci
 	@echo 'format code and imports'
