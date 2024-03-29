@@ -78,7 +78,8 @@ func (s *folder) CreateFolder(name string, data interface{}, path ...string) (*e
 	s.rwm.Lock()
 	defer s.rwm.Unlock()
 
-	if utils.NameToID(name) == "" {
+	id := utils.NameToID(name)
+	if id == "" {
 		return nil, fsentry_error.ErrorBadName
 	}
 
@@ -94,7 +95,7 @@ func (s *folder) CreateFolder(name string, data interface{}, path ...string) (*e
 	}
 
 	// Create info file
-	info := entity.NewFolderInfo(name, data, s.isPretty)
+	info := entity.NewFolderInfo(id, name, data, s.isPretty)
 	err = s.repFolder.CreateInfo(fullPath, info, s.isPretty)
 	if err != nil {
 		return nil, err

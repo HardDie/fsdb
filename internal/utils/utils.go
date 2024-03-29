@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/json"
 	"regexp"
 	"strings"
+
+	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 const (
@@ -57,4 +61,57 @@ func NameToID(in string) string {
 }
 func Allocate[T any](val T) *T {
 	return &val
+}
+
+func StructToJSON[T any](val T, isPretty bool) ([]byte, error) {
+	var dataJson bytes.Buffer
+	enc := json.NewEncoder(&dataJson)
+	if isPretty {
+		enc.SetIndent("", "\t")
+	}
+	err := enc.Encode(val)
+	if err != nil {
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return dataJson.Bytes(), nil
+}
+func JSONToStruct[T any](data []byte) (*T, error) {
+	var res T
+	err := json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+	}
+	return &res, nil
+}
+
+func Compare[T comparable](a, b *T) bool {
+	switch {
+	case a == nil && b == nil:
+	case a != nil && b != nil:
+		if *a != *b {
+			return false
+		}
+	default:
+		return false
+	}
+	return true
+}
+func CompareSlice[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for _, vala := range a {
+		found := false
+		for _, valb := range b {
+			if vala == valb {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+	return true
 }

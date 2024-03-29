@@ -27,17 +27,27 @@ type FolderInfo struct {
 	Data json.RawMessage `json:"data"`
 }
 
-func NewFolderInfo(name string, data interface{}, isIndent bool) *FolderInfo {
+type UpdateFolderInfo struct {
+	ID        *string                     `json:"id"`
+	Name      *fsentry_types.QuotedString `json:"name"`
+	CreatedAt *time.Time                  `json:"createdAt"`
+	UpdatedAt *time.Time                  `json:"updatedAt"`
+	Data      *json.RawMessage            `json:"data"`
+}
+
+func NewFolderInfo(id, name string, data interface{}, isIndent bool) *FolderInfo {
 	var dataJson []byte
 	if isIndent {
 		dataJson, _ = json.MarshalIndent(data, "", "	")
 	} else {
 		dataJson, _ = json.Marshal(data)
 	}
+	now := time.Now().UTC()
 	return &FolderInfo{
-		Id:        utils.NameToID(name),
+		Id:        id,
 		Name:      fsentry_types.QuotedString(name),
-		CreatedAt: utils.Allocate(time.Now()),
+		CreatedAt: &now,
+		UpdatedAt: &now,
 		Data:      dataJson,
 	}
 }
@@ -48,11 +58,11 @@ func (i *FolderInfo) SetName(name string) *FolderInfo {
 	return i
 }
 func (i *FolderInfo) UpdatedNow() *FolderInfo {
-	i.UpdatedAt = utils.Allocate(time.Now())
+	i.UpdatedAt = utils.Allocate(time.Now().UTC())
 	return i
 }
 func (i *FolderInfo) FlushTime() *FolderInfo {
-	i.CreatedAt = utils.Allocate(time.Now())
+	i.CreatedAt = utils.Allocate(time.Now().UTC())
 	i.UpdatedAt = nil
 	return i
 }
@@ -68,6 +78,6 @@ func (i *FolderInfo) UpdateData(data interface{}, isIndent bool) error {
 		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
 	}
 	i.Data = dataJson
-	i.UpdatedAt = utils.Allocate(time.Now())
+	i.UpdatedAt = utils.Allocate(time.Now().UTC())
 	return nil
 }
