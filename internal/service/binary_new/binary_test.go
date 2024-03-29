@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/HardDie/fsentry/internal/repository/fs"
+	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -18,7 +18,7 @@ func TestBinaryCreate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		s := NewBinary(fs.NewFS(), true)
+		s := NewBinary(fsStorage.NewFS(), true)
 		err = s.Create(dir, "success", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -36,7 +36,7 @@ func TestBinaryGet(t *testing.T) {
 		name := "success"
 		payload := []byte("check")
 
-		s := NewBinary(fs.NewFS(), true)
+		s := NewBinary(fsStorage.NewFS(), true)
 		err = s.Create(dir, name, payload)
 		if err != nil {
 			t.Fatal(err)
@@ -65,7 +65,7 @@ func TestBinaryMove(t *testing.T) {
 
 		payload := []byte("check")
 
-		s := NewBinary(fs.NewFS(), true)
+		s := NewBinary(fsStorage.NewFS(), true)
 		err = s.Create(dir, oldName, payload)
 		if err != nil {
 			t.Fatal(err)
@@ -104,7 +104,7 @@ func TestBinaryUpdate(t *testing.T) {
 		name := "success"
 		payload := []byte("check")
 
-		s := NewBinary(fs.NewFS(), true)
+		s := NewBinary(fsStorage.NewFS(), true)
 		err = s.Create(dir, name, payload)
 		if err != nil {
 			t.Fatal(err)
@@ -135,7 +135,7 @@ func TestBinaryRemove(t *testing.T) {
 		name := "success"
 		payload := []byte("check")
 
-		s := NewBinary(fs.NewFS(), true)
+		s := NewBinary(fsStorage.NewFS(), true)
 		err = s.Create(dir, name, payload)
 		if err != nil {
 			t.Fatal(err)
@@ -159,7 +159,7 @@ func TestBinaryDuplicate(t *testing.T) {
 		newName := "success_duplicate"
 		payload := []byte("check")
 
-		s := NewBinary(fs.NewFS(), true)
+		s := NewBinary(fsStorage.NewFS(), true)
 		err = s.Create(dir, oldName, payload)
 		if err != nil {
 			t.Fatal(err)

@@ -1,7 +1,7 @@
 package binary
 
 import (
-	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
+	"github.com/HardDie/fsentry/internal/fs"
 )
 
 type Binary interface {
@@ -12,10 +12,10 @@ type Binary interface {
 }
 
 type binary struct {
-	fs repositoryFS.FS
+	fs fs.FS
 }
 
-func NewBinary(fs repositoryFS.FS) Binary {
+func NewBinary(fs fs.FS) Binary {
 	return binary{
 		fs: fs,
 	}

@@ -8,10 +8,11 @@ import (
 	"sync"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/fs"
+	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
 	repositoryBinary "github.com/HardDie/fsentry/internal/repository/binary"
 	repositoryEntry "github.com/HardDie/fsentry/internal/repository/entry"
 	repositoryFolder "github.com/HardDie/fsentry/internal/repository/folder"
-	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
 	serviceBinary "github.com/HardDie/fsentry/internal/service/binary"
 	serviceCommon "github.com/HardDie/fsentry/internal/service/common"
 	serviceEntry "github.com/HardDie/fsentry/internal/service/entry"
@@ -38,7 +39,7 @@ type FSEntry struct {
 
 	isPretty bool
 
-	repFS         repositoryFS.FS
+	repFS         fs.FS
 	repFolder     repositoryFolder.Folder
 	repEntry      repositoryEntry.Entry
 	repBinary     repositoryBinary.Binary
@@ -57,7 +58,7 @@ func WithPretty() func(fs *FSEntry) {
 func NewFSEntry(root string, ops ...func(fs *FSEntry)) IFSEntry {
 	res := &FSEntry{
 		root:  root,
-		repFS: repositoryFS.NewFS(),
+		repFS: fsStorage.NewFS(),
 	}
 	for _, op := range ops {
 		op(res)

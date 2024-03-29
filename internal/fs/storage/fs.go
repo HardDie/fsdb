@@ -1,4 +1,4 @@
-package fs
+package storage
 
 import (
 	"errors"
@@ -21,29 +21,14 @@ const (
 	CreateFilePerm  = 0666
 )
 
-type FS interface {
-	CreateFile(path string, data []byte) error
-	ReadFile(path string) ([]byte, error)
-	UpdateFile(path string, data []byte) error
-	RemoveFile(path string) error
-	CreateFolder(path string) error
-	CreateAllFolder(path string) error
-	RemoveFolder(path string) error
-	Rename(oldPath, newPath string) error
-	CopyFolder(srcPath, dstPath string) error
-	List(path string) ([]os.FileInfo, error)
-	IsFileExist(path string) (isExist bool, err error)
-	IsFolderExist(path string) (isExist bool, err error)
-}
-
-type fs struct{}
+type FS struct{}
 
 func NewFS() FS {
-	return fs{}
+	return FS{}
 }
 
 // CreateFile allows you to create a file and fill it with some binary data.
-func (r fs) CreateFile(path string, data []byte) error {
+func (r FS) CreateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, CreateFileFlags, CreateFilePerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -75,7 +60,7 @@ func (r fs) CreateFile(path string, data []byte) error {
 }
 
 // UpdateFile allows you to update a file.
-func (r fs) UpdateFile(path string, data []byte) error {
+func (r FS) UpdateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, UpdateFileFlags, CreateFilePerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -110,7 +95,7 @@ func (r fs) UpdateFile(path string, data []byte) error {
 }
 
 // ReadFile attempts to open and read all binary data from the desired file.
-func (r fs) ReadFile(path string) ([]byte, error) {
+func (r FS) ReadFile(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -143,7 +128,7 @@ func (r fs) ReadFile(path string) ([]byte, error) {
 
 // RemoveFile allows you to delete a file or an empty folder.
 // If the folder is not empty, an ErrorExist error will be returned.
-func (r fs) RemoveFile(path string) error {
+func (r FS) RemoveFile(path string) error {
 	err := os.Remove(path)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -155,7 +140,7 @@ func (r fs) RemoveFile(path string) error {
 }
 
 // CreateFolder allows you to create a folder in the file system.
-func (r fs) CreateFolder(path string) error {
+func (r FS) CreateFolder(path string) error {
 	err := os.Mkdir(path, CreateDirPerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -169,7 +154,7 @@ func (r fs) CreateFolder(path string) error {
 // CreateAllFolder allows you to create a folder in the file system,
 // and if some intermediate folders in the desired path do not exist, they will also be created.
 // If the specified folder already exists, there will be no error.
-func (r fs) CreateAllFolder(path string) error {
+func (r FS) CreateAllFolder(path string) error {
 	err := os.MkdirAll(path, CreateDirPerm)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -187,7 +172,7 @@ func (r fs) CreateAllFolder(path string) error {
 }
 
 // RemoveFolder will delete the desired folder even if it is not empty with all the data it contains.
-func (r fs) RemoveFolder(path string) error {
+func (r FS) RemoveFolder(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
 		if e := isKnownError(err); e != nil {
@@ -199,7 +184,7 @@ func (r fs) RemoveFolder(path string) error {
 }
 
 // Rename allows you to rename a file/directory or move it to another path.
-func (r fs) Rename(oldPath, newPath string) error {
+func (r FS) Rename(oldPath, newPath string) error {
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
 		// TODO: process different types of errors
@@ -209,7 +194,7 @@ func (r fs) Rename(oldPath, newPath string) error {
 }
 
 // CopyFolder will recursively copy the source folder to the desired destination path.
-func (r fs) CopyFolder(srcPath, dstPath string) error {
+func (r FS) CopyFolder(srcPath, dstPath string) error {
 	err := copy.Copy(srcPath, dstPath)
 	if err != nil {
 		// TODO: process different types of errors
@@ -219,7 +204,7 @@ func (r fs) CopyFolder(srcPath, dstPath string) error {
 }
 
 // List will read the complete list of objects on the specified path and return them.
-func (r fs) List(path string) ([]os.FileInfo, error) {
+func (r FS) List(path string) ([]os.FileInfo, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		// TODO: process different types of errors
@@ -236,7 +221,7 @@ func (r fs) List(path string) ([]os.FileInfo, error) {
 }
 
 // IsFileExist checks if an object that is a file, not a folder, exists at the specified path.
-func (r fs) IsFileExist(path string) (isExist bool, err error) {
+func (r FS) IsFileExist(path string) (isExist bool, err error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -257,7 +242,7 @@ func (r fs) IsFileExist(path string) (isExist bool, err error) {
 }
 
 // IsFolderExist checks if an object that is a folder, exists at the specified path.
-func (r fs) IsFolderExist(path string) (isExist bool, err error) {
+func (r FS) IsFolderExist(path string) (isExist bool, err error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {

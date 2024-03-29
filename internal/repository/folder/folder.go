@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 
 	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/repository/common"
-	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
 )
 
 const (
@@ -25,10 +25,10 @@ type Folder interface {
 }
 
 type folder struct {
-	fs repositoryFS.FS
+	fs fs.FS
 }
 
-func NewFolder(fs repositoryFS.FS) Folder {
+func NewFolder(fs fs.FS) Folder {
 	return folder{
 		fs: fs,
 	}

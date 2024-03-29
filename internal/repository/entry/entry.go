@@ -2,8 +2,8 @@ package entry
 
 import (
 	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/repository/common"
-	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
 )
 
 type Entry interface {
@@ -16,10 +16,10 @@ type Entry interface {
 }
 
 type entry struct {
-	fs repositoryFS.FS
+	fs fs.FS
 }
 
-func NewEntry(fs repositoryFS.FS) Entry {
+func NewEntry(fs fs.FS) Entry {
 	return entry{
 		fs: fs,
 	}

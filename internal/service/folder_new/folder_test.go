@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	"github.com/HardDie/fsentry/internal/repository/fs"
+	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
@@ -20,7 +20,7 @@ func TestFolderCreate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		_, err = s.Create(dir, "success", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -37,7 +37,7 @@ func TestFolderGet(t *testing.T) {
 
 		name := "success"
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -63,7 +63,7 @@ func TestFolderMove(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -104,7 +104,7 @@ func TestFolderUpdate(t *testing.T) {
 
 		name := "success"
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, name, []byte("hello world"))
 		if err != nil {
 			t.Fatal(err)
@@ -137,7 +137,7 @@ func TestFolderRemove(t *testing.T) {
 
 		name := "success"
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		_, err = s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -160,7 +160,7 @@ func TestFolderDuplicate(t *testing.T) {
 		oldName := "success"
 		newName := "success_duplicate"
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		ent, err := s.Create(dir, oldName, []byte("some data"))
 		if err != nil {
 			t.Fatal(err)
@@ -186,7 +186,7 @@ func TestFolderMoveWithoutTimestamp(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := NewFolder(fs.NewFS(), true)
+		s := NewFolder(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)

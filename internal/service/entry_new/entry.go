@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/HardDie/fsentry/internal/entity"
-	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
+	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
@@ -26,13 +26,13 @@ type Entry interface {
 }
 
 type entry struct {
-	fs       repositoryFS.FS
+	fs       fs.FS
 	isPretty bool
 	now      func() time.Time
 }
 
 func NewEntry(
-	fs repositoryFS.FS,
+	fs fs.FS,
 	isPretty bool,
 ) Entry {
 	return entry{

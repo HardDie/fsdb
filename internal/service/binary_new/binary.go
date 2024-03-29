@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"time"
 
-	repositoryFS "github.com/HardDie/fsentry/internal/repository/fs"
+	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
@@ -23,13 +23,13 @@ type Binary interface {
 }
 
 type binary struct {
-	fs       repositoryFS.FS
+	fs       fs.FS
 	isPretty bool
 	now      func() time.Time
 }
 
 func NewBinary(
-	fs repositoryFS.FS,
+	fs fs.FS,
 	isPretty bool,
 ) Binary {
 	return binary{
