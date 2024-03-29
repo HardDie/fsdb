@@ -6,6 +6,7 @@ import (
 
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	"github.com/HardDie/fsentry/pkg/fsentry_types"
 )
 
 // Entry is the main object for storing data in the fsentry library. It stores data in *.json files,
@@ -16,7 +17,7 @@ type Entry struct {
 	// When a file is created, it has the same name as the Id string. File extension is not saved in the Id.
 	Id string `json:"id"` // TODO: rename to ID
 	// Name is the original name that was set by the user without any modification.
-	Name string `json:"name"`
+	Name fsentry_types.QuotedString `json:"name"`
 	// CreatedAt metadata for each Entry to track the original creation date.
 	CreatedAt *time.Time `json:"createdAt"` // TODO: remove pointer, CreatedAt must be set always
 	// UpdatedAt metadata to keep track of when the Entry was last updated.
@@ -34,14 +35,14 @@ func NewEntry(name string, data interface{}, isIndent bool) *Entry {
 	}
 	return &Entry{
 		Id:        utils.NameToID(name),
-		Name:      name,
+		Name:      fsentry_types.QS(name),
 		CreatedAt: utils.Allocate(time.Now()),
 		Data:      dataJson,
 	}
 }
 
 func (i *Entry) SetName(name string) *Entry {
-	i.Name = name
+	i.Name = fsentry_types.QS(name)
 	i.Id = utils.NameToID(name)
 	return i
 }

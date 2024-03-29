@@ -28,11 +28,11 @@ type FolderInfo struct {
 }
 
 type UpdateFolderInfo struct {
-	ID        *string                     `json:"id"`
-	Name      *fsentry_types.QuotedString `json:"name"`
-	CreatedAt *time.Time                  `json:"createdAt"`
-	UpdatedAt *time.Time                  `json:"updatedAt"`
-	Data      *json.RawMessage            `json:"data"`
+	ID        *string          `json:"id"`
+	Name      *string          `json:"name"`
+	CreatedAt *time.Time       `json:"createdAt"`
+	UpdatedAt *time.Time       `json:"updatedAt"`
+	Data      *json.RawMessage `json:"data"`
 }
 
 func NewFolderInfo(id, name string, data interface{}, isIndent bool) *FolderInfo {
