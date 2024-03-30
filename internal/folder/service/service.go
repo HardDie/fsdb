@@ -1,4 +1,4 @@
-package folder_new
+package service
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/folder"
 	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -14,37 +14,69 @@ import (
 )
 
 const (
-	infoFile = ".info.json"
+	infoFileSuffix = ".info.json"
 )
 
-type Folder interface {
-	Create(path, name string, data interface{}) (*entity.FolderInfo, error)
-	Get(path, name string) (*entity.FolderInfo, error)
-	Move(path, oldName, newName string) (*entity.FolderInfo, error)
-	Update(path, name string, data interface{}) (*entity.FolderInfo, error)
-	Remove(path, name string) error
-	Duplicate(path, oldName, newName string) (*entity.FolderInfo, error)
-	MoveWithoutTimestamp(path, oldName, newName string) (*entity.FolderInfo, error)
+type InternalInfo struct {
+	ID        string                     `json:"id"`
+	Name      fsentry_types.QuotedString `json:"name"`
+	CreatedAt *time.Time                 `json:"createdAt"`
+	UpdatedAt *time.Time                 `json:"updatedAt"`
+	Data      json.RawMessage            `json:"data"`
+}
+type UpdateInfoRequest struct {
+	ID        *string          `json:"id"`
+	Name      *string          `json:"name"`
+	CreatedAt *time.Time       `json:"createdAt"`
+	UpdatedAt *time.Time       `json:"updatedAt"`
+	Data      *json.RawMessage `json:"data"`
 }
 
-type folder struct {
+func toInternalInfo(ext folder.Info) InternalInfo {
+	return InternalInfo{
+		ID:        ext.ID,
+		Name:      fsentry_types.QS(ext.Name),
+		CreatedAt: &ext.CreatedAt,
+		UpdatedAt: &ext.UpdatedAt,
+		Data:      ext.Data,
+	}
+}
+func toExternalInfo(in InternalInfo) folder.Info {
+	ext := folder.Info{
+		ID:   in.ID,
+		Name: in.Name.String(),
+		Data: in.Data,
+	}
+	if in.CreatedAt == nil {
+		now := time.Now().UTC()
+		in.CreatedAt = &now
+	}
+	ext.CreatedAt = *in.CreatedAt
+	if in.UpdatedAt != nil {
+		in.UpdatedAt = in.CreatedAt
+	}
+	ext.UpdatedAt = *in.UpdatedAt
+	return ext
+}
+
+type Service struct {
 	fs       fs.FS
 	isPretty bool
 	now      func() time.Time
 }
 
-func NewFolder(
+func New(
 	fs fs.FS,
 	isPretty bool,
-) Folder {
-	return folder{
+) Service {
+	return Service{
 		fs:       fs,
 		isPretty: isPretty,
 		now:      time.Now,
 	}
 }
 
-func (s folder) Create(path, name string, data interface{}) (*entity.FolderInfo, error) {
+func (s Service) Create(path, name string, data interface{}) (*folder.Info, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -59,8 +91,8 @@ func (s folder) Create(path, name string, data interface{}) (*entity.FolderInfo,
 
 	// Creating and filling in information about a new folder.
 	now := s.now().UTC()
-	info := entity.FolderInfo{
-		Id:        id,
+	inInfo := InternalInfo{
+		ID:        id,
 		Name:      fsentry_types.QS(name),
 		CreatedAt: &now,
 		UpdatedAt: &now,
@@ -68,7 +100,7 @@ func (s folder) Create(path, name string, data interface{}) (*entity.FolderInfo,
 	}
 
 	// Prepare the new folder information and convert it into a json byte slice.
-	infoJSON, err := utils.StructToJSON(info, s.isPretty)
+	infoJSON, err := utils.StructToJSON(inInfo, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +108,7 @@ func (s folder) Create(path, name string, data interface{}) (*entity.FolderInfo,
 	// fullPath is the path where a new folder with this name will be created.
 	fullPath := filepath.Join(path, id)
 	// infoFilePath - path to the .info.json file with meta information that will be created in the new folder.
-	infoFilePath := filepath.Join(fullPath, infoFile)
+	infoFilePath := filepath.Join(fullPath, infoFileSuffix)
 
 	// Try creating an empty folder. It must be created inside an existing folder.
 	err = s.fs.CreateFolder(fullPath)
@@ -88,7 +120,8 @@ func (s folder) Create(path, name string, data interface{}) (*entity.FolderInfo,
 	err = s.fs.CreateFile(infoFilePath, infoJSON)
 	if err == nil {
 		// Good. Returns information about the created folder.
-		return &info, nil
+		extInfo := toExternalInfo(inInfo)
+		return &extInfo, nil
 	}
 
 	// If something went wrong and the .info.json file was not created,
@@ -99,7 +132,7 @@ func (s folder) Create(path, name string, data interface{}) (*entity.FolderInfo,
 	}
 	return nil, err
 }
-func (s folder) Get(path, name string) (*entity.FolderInfo, error) {
+func (s Service) Get(path, name string) (*folder.Info, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -110,7 +143,7 @@ func (s folder) Get(path, name string) (*entity.FolderInfo, error) {
 
 	return s.getInfo(fullPath)
 }
-func (s folder) Move(path, oldName, newName string) (*entity.FolderInfo, error) {
+func (s Service) Move(path, oldName, newName string) (*folder.Info, error) {
 	// Check if the old folder name is a valid folder name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -138,23 +171,23 @@ func (s folder) Move(path, oldName, newName string) (*entity.FolderInfo, error) 
 	oldFullPath := filepath.Join(path, oldID)
 
 	// Read meta info from the current folder to update it.
-	oldInfo, err := s.getInfo(oldFullPath)
+	oldExtInfo, err := s.getInfo(oldFullPath)
 	if err != nil {
 		return nil, err
 	}
 
-	newInfoFilePath := filepath.Join(newFullPath, infoFile)
+	newInfoFilePath := filepath.Join(newFullPath, infoFileSuffix)
 
 	now := s.now().UTC()
-	newInfo := entity.FolderInfo{
-		Id:        newID,
+	newInInfo := InternalInfo{
+		ID:        newID,
 		Name:      fsentry_types.QS(newName),
-		CreatedAt: oldInfo.CreatedAt,
+		CreatedAt: &oldExtInfo.CreatedAt,
 		UpdatedAt: &now,
-		Data:      oldInfo.Data,
+		Data:      oldExtInfo.Data,
 	}
 
-	newInfoJSON, err := utils.StructToJSON(newInfo, s.isPretty)
+	newInfoJSON, err := utils.StructToJSON(newInInfo, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +203,8 @@ func (s folder) Move(path, oldName, newName string) (*entity.FolderInfo, error) 
 	err = s.fs.UpdateFile(newInfoFilePath, newInfoJSON)
 	if err == nil {
 		// Good. Returns information about the renamed folder.
-		return &newInfo, nil
+		newExtInfo := toExternalInfo(newInInfo)
+		return &newExtInfo, nil
 	}
 
 	// If our attempt to update the meta info file fails, we assume the meta info file has an old value,
@@ -182,7 +216,7 @@ func (s folder) Move(path, oldName, newName string) (*entity.FolderInfo, error) 
 
 	return nil, nil
 }
-func (s folder) Update(path, name string, data interface{}) (*entity.FolderInfo, error) {
+func (s Service) Update(path, name string, data interface{}) (*folder.Info, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -197,7 +231,7 @@ func (s folder) Update(path, name string, data interface{}) (*entity.FolderInfo,
 
 	fullPath := filepath.Join(path, id)
 
-	info, err := s.updateInfo(fullPath, entity.UpdateFolderInfo{
+	extInfo, err := s.updateInfo(fullPath, UpdateInfoRequest{
 		Data:      utils.Allocate[json.RawMessage](dataJSON),
 		UpdatedAt: utils.Allocate(s.now().UTC()),
 	})
@@ -205,9 +239,9 @@ func (s folder) Update(path, name string, data interface{}) (*entity.FolderInfo,
 		return nil, err
 	}
 
-	return info, nil
+	return extInfo, nil
 }
-func (s folder) Remove(path, name string) error {
+func (s Service) Remove(path, name string) error {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -234,7 +268,7 @@ func (s folder) Remove(path, name string) error {
 
 	return s.fs.RemoveFolder(fullPath)
 }
-func (s folder) Duplicate(path, oldName, newName string) (*entity.FolderInfo, error) {
+func (s Service) Duplicate(path, oldName, newName string) (*folder.Info, error) {
 	// Check if the old folder name is a valid folder name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -262,26 +296,26 @@ func (s folder) Duplicate(path, oldName, newName string) (*entity.FolderInfo, er
 	oldFullPath := filepath.Join(path, oldID)
 
 	// Read meta info from the current folder to update it.
-	oldInfo, err := s.getInfo(oldFullPath)
+	oldExtInfo, err := s.getInfo(oldFullPath)
 	if err != nil {
 		return nil, err
 	}
 
 	now := s.now().UTC()
-	newInfo := entity.FolderInfo{
-		Id:        newID,
+	newInInfo := InternalInfo{
+		ID:        newID,
 		Name:      fsentry_types.QS(newName),
 		CreatedAt: &now,
 		UpdatedAt: &now,
-		Data:      oldInfo.Data,
+		Data:      oldExtInfo.Data,
 	}
 
-	newInfoJSON, err := utils.StructToJSON(newInfo, s.isPretty)
+	newInfoJSON, err := utils.StructToJSON(newInInfo, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
 
-	newInfoFilePath := filepath.Join(newFullPath, infoFile)
+	newInfoFilePath := filepath.Join(newFullPath, infoFileSuffix)
 
 	err = s.fs.CopyFolder(oldFullPath, newFullPath)
 	if err != nil {
@@ -300,9 +334,10 @@ func (s folder) Duplicate(path, oldName, newName string) (*entity.FolderInfo, er
 		}
 		return nil, err
 	}
-	return &newInfo, nil
+	newExtInfo := toExternalInfo(newInInfo)
+	return &newExtInfo, nil
 }
-func (s folder) MoveWithoutTimestamp(path, oldName, newName string) (*entity.FolderInfo, error) {
+func (s Service) MoveWithoutTimestamp(path, oldName, newName string) (*folder.Info, error) {
 	// Check if the old folder name is a valid folder name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -330,22 +365,22 @@ func (s folder) MoveWithoutTimestamp(path, oldName, newName string) (*entity.Fol
 	oldFullPath := filepath.Join(path, oldID)
 
 	// Read meta info from the current folder to update it.
-	oldInfo, err := s.getInfo(oldFullPath)
+	oldExtInfo, err := s.getInfo(oldFullPath)
 	if err != nil {
 		return nil, err
 	}
 
-	newInfoFilePath := filepath.Join(newFullPath, infoFile)
+	newInfoFilePath := filepath.Join(newFullPath, infoFileSuffix)
 
-	newInfo := entity.FolderInfo{
-		Id:        newID,
+	newInInfo := InternalInfo{
+		ID:        newID,
 		Name:      fsentry_types.QS(newName),
-		CreatedAt: oldInfo.CreatedAt,
-		UpdatedAt: oldInfo.UpdatedAt,
-		Data:      oldInfo.Data,
+		CreatedAt: &oldExtInfo.CreatedAt,
+		UpdatedAt: &oldExtInfo.UpdatedAt,
+		Data:      oldExtInfo.Data,
 	}
 
-	newInfoJSON, err := utils.StructToJSON(newInfo, s.isPretty)
+	newInfoJSON, err := utils.StructToJSON(newInInfo, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +396,8 @@ func (s folder) MoveWithoutTimestamp(path, oldName, newName string) (*entity.Fol
 	err = s.fs.UpdateFile(newInfoFilePath, newInfoJSON)
 	if err == nil {
 		// Good. Returns information about the renamed folder.
-		return &newInfo, nil
+		newExtInfo := toExternalInfo(newInInfo)
+		return &newExtInfo, nil
 	}
 
 	// If our attempt to update the meta info file fails, we assume the meta info file has an old value,
@@ -371,61 +407,72 @@ func (s folder) MoveWithoutTimestamp(path, oldName, newName string) (*entity.Fol
 		return nil, err
 	}
 
-	return oldInfo, nil
+	return nil, nil
 }
 
-func (s folder) getInfo(fullPath string) (*entity.FolderInfo, error) {
-	infoFilePath := filepath.Join(fullPath, infoFile)
+func (s Service) getInfo(fullPath string) (*folder.Info, error) {
+	infoFilePath := filepath.Join(fullPath, infoFileSuffix)
 
 	// If the folder exists, we will try to read information about the folder.
 	data, err := s.fs.ReadFile(infoFilePath)
 	if err != nil {
 		return nil, err
 	}
-	info, err := utils.JSONToStruct[entity.FolderInfo](data)
+	inInfo, err := utils.JSONToStruct[InternalInfo](data)
 	if err != nil {
 		return nil, err
+	}
+	if inInfo == nil {
+		log.Println("inInfo is nil")
+		return nil, fsentry_error.ErrorInternal
 	}
 
-	return info, nil
+	extInfo := toExternalInfo(*inInfo)
+	return &extInfo, nil
 }
-func (s folder) updateInfo(fullPath string, req entity.UpdateFolderInfo) (*entity.FolderInfo, error) {
-	info, err := s.getInfo(fullPath)
+func (s Service) updateInfo(fullPath string, req UpdateInfoRequest) (*folder.Info, error) {
+	oldExtInfo, err := s.getInfo(fullPath)
 	if err != nil {
 		return nil, err
 	}
+	if oldExtInfo == nil {
+		log.Println("extInfo is nil")
+		return nil, fsentry_error.ErrorInternal
+	}
+	inInfo := toInternalInfo(*oldExtInfo)
 
 	if req.ID != nil {
-		info.Id = *req.ID
+		inInfo.ID = *req.ID
 	}
 	if req.Name != nil {
-		info.Name = fsentry_types.QS(*req.Name)
+		inInfo.Name = fsentry_types.QS(*req.Name)
 	}
 	if req.CreatedAt != nil {
-		info.CreatedAt = req.CreatedAt
+		inInfo.CreatedAt = req.CreatedAt
 	}
 	if req.UpdatedAt != nil {
-		info.UpdatedAt = req.UpdatedAt
+		inInfo.UpdatedAt = req.UpdatedAt
 	}
 	if req.Data != nil {
-		info.Data = *req.Data
+		inInfo.Data = *req.Data
 	}
 
-	infoJSON, err := utils.StructToJSON(info, s.isPretty)
+	infoJSON, err := utils.StructToJSON(inInfo, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
 
-	infoFilePath := filepath.Join(fullPath, infoFile)
+	infoFilePath := filepath.Join(fullPath, infoFileSuffix)
 
 	err = s.fs.UpdateFile(infoFilePath, infoJSON)
 	if err != nil {
 		return nil, err
 	}
 
-	return info, nil
+	newExtInfo := toExternalInfo(inInfo)
+	return &newExtInfo, nil
 }
-func (s folder) isInfoExist(fullPath string) (bool, error) {
-	infoFilePath := filepath.Join(fullPath, infoFile)
+func (s Service) isInfoExist(fullPath string) (bool, error) {
+	infoFilePath := filepath.Join(fullPath, infoFileSuffix)
 	return s.fs.IsFileExist(infoFilePath)
 }

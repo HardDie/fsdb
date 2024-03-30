@@ -1,4 +1,4 @@
-package folder_new
+package service
 
 import (
 	"errors"
@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/folder"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
-	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -20,7 +19,7 @@ func TestFolderCreate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		_, err = s.Create(dir, "success", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -37,7 +36,7 @@ func TestFolderGet(t *testing.T) {
 
 		name := "success"
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -63,7 +62,7 @@ func TestFolderMove(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -104,7 +103,7 @@ func TestFolderUpdate(t *testing.T) {
 
 		name := "success"
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, name, []byte("hello world"))
 		if err != nil {
 			t.Fatal(err)
@@ -137,7 +136,7 @@ func TestFolderRemove(t *testing.T) {
 
 		name := "success"
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		_, err = s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -160,7 +159,7 @@ func TestFolderDuplicate(t *testing.T) {
 		oldName := "success"
 		newName := "success_duplicate"
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		ent, err := s.Create(dir, oldName, []byte("some data"))
 		if err != nil {
 			t.Fatal(err)
@@ -186,7 +185,7 @@ func TestFolderMoveWithoutTimestamp(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := NewFolder(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -218,7 +217,7 @@ func TestFolderMoveWithoutTimestamp(t *testing.T) {
 	})
 }
 
-func compareInfo(t *testing.T, got, want *entity.FolderInfo) bool {
+func compareInfo(t *testing.T, got, want *folder.Info) bool {
 	if want == nil && got == nil {
 		return true
 	}
@@ -232,20 +231,20 @@ func compareInfo(t *testing.T, got, want *entity.FolderInfo) bool {
 	}
 
 	isEqual := true
-	if want.Id != got.Id {
-		t.Logf("info.ID; %q != %q", got.Id, want.Id)
+	if want.ID != got.ID {
+		t.Logf("info.ID; %q != %q", got.ID, want.ID)
 		isEqual = false
 	}
 	if want.Name != got.Name {
 		t.Logf("info.Name; %q != %q", got.Name, want.Name)
 		isEqual = false
 	}
-	if !utils.Compare(want.CreatedAt, got.CreatedAt) {
-		t.Logf("info.CreatedAt; %+v != %+v", got.CreatedAt, want.CreatedAt)
+	if !want.CreatedAt.Equal(got.CreatedAt) {
+		t.Logf("info.CreatedAt; %v != %v", got.CreatedAt, want.CreatedAt)
 		isEqual = false
 	}
-	if !utils.Compare(want.UpdatedAt, got.UpdatedAt) {
-		t.Logf("info.UpdatedAt; %+v != %+v", got.UpdatedAt, want.UpdatedAt)
+	if !want.UpdatedAt.Equal(got.UpdatedAt) {
+		t.Logf("info.UpdatedAt; %v != %v", got.UpdatedAt, want.UpdatedAt)
 		isEqual = false
 	}
 
