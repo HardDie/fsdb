@@ -1,4 +1,4 @@
-package entry_new
+package service
 
 import (
 	"errors"
@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/entry"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
-	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -20,7 +19,7 @@ func TestEntryCreate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		s := NewEntry(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		_, err = s.Create(dir, "success", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -37,7 +36,7 @@ func TestEntryGet(t *testing.T) {
 
 		name := "success"
 
-		s := NewEntry(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		ent, err := s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -64,7 +63,7 @@ func TestEntryMove(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := NewEntry(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -105,7 +104,7 @@ func TestEntryUpdate(t *testing.T) {
 
 		name := "success"
 
-		s := NewEntry(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		ent, err := s.Create(dir, name, []byte("hello world"))
 		if err != nil {
 			t.Fatal(err)
@@ -138,7 +137,7 @@ func TestEntryRemove(t *testing.T) {
 
 		name := "success"
 
-		s := NewEntry(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		_, err = s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -161,7 +160,7 @@ func TestEntryDuplicate(t *testing.T) {
 		oldName := "success"
 		newName := "success_duplicate"
 
-		s := NewEntry(fsStorage.NewFS(), true)
+		s := New(fsStorage.NewFS(), true)
 		ent, err := s.Create(dir, oldName, []byte("some data"))
 		if err != nil {
 			t.Fatal(err)
@@ -177,7 +176,7 @@ func TestEntryDuplicate(t *testing.T) {
 	})
 }
 
-func compareEntry(t *testing.T, got, want *entity.Entry) bool {
+func compareEntry(t *testing.T, got, want *entry.Entry) bool {
 	if want == nil && got == nil {
 		return true
 	}
@@ -191,20 +190,20 @@ func compareEntry(t *testing.T, got, want *entity.Entry) bool {
 	}
 
 	isEqual := true
-	if want.Id != got.Id {
-		t.Logf("entry.ID; %q != %q", got.Id, want.Id)
+	if want.ID != got.ID {
+		t.Logf("entry.ID; %q != %q", got.ID, want.ID)
 		isEqual = false
 	}
 	if want.Name != got.Name {
 		t.Logf("entry.Name; %q != %q", got.Name, want.Name)
 		isEqual = false
 	}
-	if !utils.Compare(want.CreatedAt, got.CreatedAt) {
-		t.Logf("entry.CreatedAt; %+v != %+v", got.CreatedAt, want.CreatedAt)
+	if !want.CreatedAt.Equal(got.CreatedAt) {
+		t.Logf("entry.CreatedAt; %v != %v", got.CreatedAt, want.CreatedAt)
 		isEqual = false
 	}
-	if !utils.Compare(want.UpdatedAt, got.UpdatedAt) {
-		t.Logf("entry.UpdatedAt; %+v != %+v", got.UpdatedAt, want.UpdatedAt)
+	if !want.UpdatedAt.Equal(got.UpdatedAt) {
+		t.Logf("entry.UpdatedAt; %v != %v", got.UpdatedAt, want.UpdatedAt)
 		isEqual = false
 	}
 

@@ -1,11 +1,11 @@
-package entry_new
+package service
 
 import (
 	"encoding/json"
 	"path/filepath"
 	"time"
 
-	"github.com/HardDie/fsentry/internal/entity"
+	"github.com/HardDie/fsentry/internal/entry"
 	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/utils"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
@@ -16,33 +16,59 @@ const (
 	entryFileSuffix = ".json"
 )
 
-type Entry interface {
-	Create(path, name string, data interface{}) (*entity.Entry, error)
-	Get(path, name string) (*entity.Entry, error)
-	Move(path, oldName, newName string) (*entity.Entry, error)
-	Update(path, name string, data interface{}) (*entity.Entry, error)
-	Remove(path, name string) error
-	Duplicate(path, oldName, newName string) (*entity.Entry, error)
+type InternalEntry struct {
+	ID        string                     `json:"id"`
+	Name      fsentry_types.QuotedString `json:"name"`
+	CreatedAt *time.Time                 `json:"createdAt"`
+	UpdatedAt *time.Time                 `json:"updatedAt"`
+	Data      json.RawMessage            `json:"data"`
 }
 
-type entry struct {
+func toInternalEntry(ext entry.Entry) InternalEntry {
+	return InternalEntry{
+		ID:        ext.ID,
+		Name:      fsentry_types.QS(ext.Name),
+		CreatedAt: &ext.CreatedAt,
+		UpdatedAt: &ext.UpdatedAt,
+		Data:      ext.Data,
+	}
+}
+func toExternalEntry(in InternalEntry) entry.Entry {
+	ext := entry.Entry{
+		ID:   in.ID,
+		Name: in.Name.String(),
+		Data: in.Data,
+	}
+	if in.CreatedAt == nil {
+		now := time.Now().UTC()
+		in.CreatedAt = &now
+	}
+	ext.CreatedAt = *in.CreatedAt
+	if in.UpdatedAt != nil {
+		in.UpdatedAt = in.CreatedAt
+	}
+	ext.UpdatedAt = *in.UpdatedAt
+	return ext
+}
+
+type Service struct {
 	fs       fs.FS
 	isPretty bool
 	now      func() time.Time
 }
 
-func NewEntry(
+func New(
 	fs fs.FS,
 	isPretty bool,
-) Entry {
-	return entry{
+) Service {
+	return Service{
 		fs:       fs,
 		isPretty: isPretty,
 		now:      time.Now,
 	}
 }
 
-func (s entry) Create(path, name string, data interface{}) (*entity.Entry, error) {
+func (s Service) Create(path, name string, data interface{}) (*entry.Entry, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -60,7 +86,7 @@ func (s entry) Create(path, name string, data interface{}) (*entity.Entry, error
 
 	return s.createRaw(fullPath, name, id, dataJSON)
 }
-func (s entry) Get(path, name string) (*entity.Entry, error) {
+func (s Service) Get(path, name string) (*entry.Entry, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -73,14 +99,18 @@ func (s entry) Get(path, name string) (*entity.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	ent, err := utils.JSONToStruct[entity.Entry](data)
+	inEntry, err := utils.JSONToStruct[InternalEntry](data)
 	if err != nil {
 		return nil, err
 	}
+	if inEntry == nil {
+		return nil, fsentry_error.ErrorInternal
+	}
 
-	return ent, nil
+	extEntry := toExternalEntry(*inEntry)
+	return &extEntry, nil
 }
-func (s entry) Move(path, oldName, newName string) (*entity.Entry, error) {
+func (s Service) Move(path, oldName, newName string) (*entry.Entry, error) {
 	// Check if the old entry name is a valid entry name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -112,21 +142,21 @@ func (s entry) Move(path, oldName, newName string) (*entity.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	oldEnt, err := utils.JSONToStruct[entity.Entry](data)
+	oldInEnt, err := utils.JSONToStruct[InternalEntry](data)
 	if err != nil {
 		return nil, err
 	}
 
 	now := s.now().UTC()
-	newEnt := entity.Entry{
-		Id:        newID,
+	newInEnt := InternalEntry{
+		ID:        newID,
 		Name:      fsentry_types.QS(newName),
-		CreatedAt: oldEnt.CreatedAt,
+		CreatedAt: oldInEnt.CreatedAt,
 		UpdatedAt: &now,
-		Data:      oldEnt.Data,
+		Data:      oldInEnt.Data,
 	}
 
-	newEntJSON, err := utils.StructToJSON(newEnt, s.isPretty)
+	newEntJSON, err := utils.StructToJSON(newInEnt, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +172,8 @@ func (s entry) Move(path, oldName, newName string) (*entity.Entry, error) {
 	err = s.fs.UpdateFile(newFullPath, newEntJSON)
 	if err == nil {
 		// Good. Returns information about the renamed entry.
-		return &newEnt, nil
+		newExtEnt := toExternalEntry(newInEnt)
+		return &newExtEnt, nil
 	}
 
 	// If our attempt to update the data file fails, we assume the data file has an old value,
@@ -154,12 +185,15 @@ func (s entry) Move(path, oldName, newName string) (*entity.Entry, error) {
 
 	return nil, nil
 }
-func (s entry) Update(path, name string, data interface{}) (*entity.Entry, error) {
-	ent, err := s.Get(path, name)
+func (s Service) Update(path, name string, data interface{}) (*entry.Entry, error) {
+	oldExtEnt, err := s.Get(path, name)
 	if err != nil {
 		return nil, err
 	}
-	fullPath := filepath.Join(path, ent.Id+entryFileSuffix)
+	if oldExtEnt == nil {
+		return nil, fsentry_error.ErrorInternal
+	}
+	fullPath := filepath.Join(path, oldExtEnt.ID+entryFileSuffix)
 
 	// Prepare a custom payload and convert it to a json byte slice.
 	dataJSON, err := utils.StructToJSON(data, s.isPretty)
@@ -167,10 +201,11 @@ func (s entry) Update(path, name string, data interface{}) (*entity.Entry, error
 		return nil, err
 	}
 
-	ent.Data = dataJSON
-	ent.UpdatedAt = utils.Allocate(s.now().UTC())
+	inEnt := toInternalEntry(*oldExtEnt)
+	inEnt.Data = dataJSON
+	inEnt.UpdatedAt = utils.Allocate(s.now().UTC())
 
-	entJSON, err := utils.StructToJSON(ent, s.isPretty)
+	entJSON, err := utils.StructToJSON(inEnt, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -180,9 +215,10 @@ func (s entry) Update(path, name string, data interface{}) (*entity.Entry, error
 		return nil, err
 	}
 
-	return ent, nil
+	newExtEnt := toExternalEntry(inEnt)
+	return &newExtEnt, nil
 }
-func (s entry) Remove(path, name string) error {
+func (s Service) Remove(path, name string) error {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -193,8 +229,8 @@ func (s entry) Remove(path, name string) error {
 
 	return s.fs.RemoveFile(fullPath)
 }
-func (s entry) Duplicate(path, oldName, newName string) (*entity.Entry, error) {
-	oldEnt, err := s.Get(path, oldName)
+func (s Service) Duplicate(path, oldName, newName string) (*entry.Entry, error) {
+	oldExtEnt, err := s.Get(path, oldName)
 	if err != nil {
 		return nil, err
 	}
@@ -207,14 +243,14 @@ func (s entry) Duplicate(path, oldName, newName string) (*entity.Entry, error) {
 
 	newFullPath := filepath.Join(path, newID+entryFileSuffix)
 
-	return s.createRaw(newFullPath, newName, newID, oldEnt.Data)
+	return s.createRaw(newFullPath, newName, newID, oldExtEnt.Data)
 }
 
-func (s entry) createRaw(fullPath, name, id string, dataJSON json.RawMessage) (*entity.Entry, error) {
+func (s Service) createRaw(fullPath, name, id string, dataJSON json.RawMessage) (*entry.Entry, error) {
 	// Creating and filling in information about a new entry.
 	now := s.now().UTC()
-	ent := entity.Entry{
-		Id:        id,
+	inEntry := InternalEntry{
+		ID:        id,
 		Name:      fsentry_types.QS(name),
 		CreatedAt: &now,
 		UpdatedAt: &now,
@@ -222,7 +258,7 @@ func (s entry) createRaw(fullPath, name, id string, dataJSON json.RawMessage) (*
 	}
 
 	// Prepare the new entry and convert it into a json byte slice.
-	entJSON, err := utils.StructToJSON(ent, s.isPretty)
+	entJSON, err := utils.StructToJSON(inEntry, s.isPretty)
 	if err != nil {
 		return nil, err
 	}
@@ -232,5 +268,6 @@ func (s entry) createRaw(fullPath, name, id string, dataJSON json.RawMessage) (*
 		return nil, err
 	}
 
-	return &ent, nil
+	extEntry := toExternalEntry(inEntry)
+	return &extEntry, nil
 }
