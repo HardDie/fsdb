@@ -1,4 +1,4 @@
-package binary_new
+package service
 
 import (
 	"path/filepath"
@@ -13,33 +13,24 @@ const (
 	binaryFileSuffix = ".bin"
 )
 
-type Binary interface {
-	Create(path, name string, data []byte) error
-	Get(path, name string) ([]byte, error)
-	Move(path, oldName, newName string) error
-	Update(path, name string, data []byte) error
-	Remove(path, name string) error
-	Duplicate(path, oldName, newName string) ([]byte, error)
-}
-
-type binary struct {
+type Service struct {
 	fs       fs.FS
 	isPretty bool
 	now      func() time.Time
 }
 
-func NewBinary(
+func New(
 	fs fs.FS,
 	isPretty bool,
-) Binary {
-	return binary{
+) Service {
+	return Service{
 		fs:       fs,
 		isPretty: isPretty,
 		now:      time.Now,
 	}
 }
 
-func (s binary) Create(path, name string, data []byte) error {
+func (s Service) Create(path, name string, data []byte) error {
 	id := utils.NameToID(name)
 	if id == "" {
 		return fsentry_error.ErrorBadName
@@ -49,7 +40,7 @@ func (s binary) Create(path, name string, data []byte) error {
 
 	return s.fs.CreateFile(fullPath, data)
 }
-func (s binary) Get(path, name string) ([]byte, error) {
+func (s Service) Get(path, name string) ([]byte, error) {
 	id := utils.NameToID(name)
 	if id == "" {
 		return nil, fsentry_error.ErrorBadName
@@ -59,7 +50,7 @@ func (s binary) Get(path, name string) ([]byte, error) {
 
 	return s.fs.ReadFile(fullPath)
 }
-func (s binary) Move(path, oldName, newName string) error {
+func (s Service) Move(path, oldName, newName string) error {
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
 		return fsentry_error.ErrorBadName
@@ -75,7 +66,7 @@ func (s binary) Move(path, oldName, newName string) error {
 
 	return s.fs.Rename(oldFullPath, newFullPath)
 }
-func (s binary) Update(path, name string, data []byte) error {
+func (s Service) Update(path, name string, data []byte) error {
 	id := utils.NameToID(name)
 	if id == "" {
 		return fsentry_error.ErrorBadName
@@ -85,7 +76,7 @@ func (s binary) Update(path, name string, data []byte) error {
 
 	return s.fs.UpdateFile(fullPath, data)
 }
-func (s binary) Remove(path, name string) error {
+func (s Service) Remove(path, name string) error {
 	id := utils.NameToID(name)
 	if id == "" {
 		return fsentry_error.ErrorBadName
@@ -95,7 +86,7 @@ func (s binary) Remove(path, name string) error {
 
 	return s.fs.RemoveFile(fullPath)
 }
-func (s binary) Duplicate(path, oldName, newName string) ([]byte, error) {
+func (s Service) Duplicate(path, oldName, newName string) ([]byte, error) {
 	data, err := s.Get(path, oldName)
 	if err != nil {
 		return nil, err
