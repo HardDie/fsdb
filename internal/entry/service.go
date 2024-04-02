@@ -1,13 +1,13 @@
-package service
+package entry
 
 import (
 	"encoding/json"
 	"path/filepath"
 	"time"
 
+	"github.com/HardDie/fsentry/dto"
 	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/utils"
-	"github.com/HardDie/fsentry/pkg/fsentry"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
 )
@@ -24,7 +24,7 @@ type InternalEntry struct {
 	Data      json.RawMessage            `json:"data"`
 }
 
-func toInternalEntry(ext fsentry.Entry) InternalEntry {
+func toInternalEntry(ext dto.Entry) InternalEntry {
 	return InternalEntry{
 		ID:        ext.ID,
 		Name:      fsentry_types.QS(ext.Name),
@@ -33,8 +33,8 @@ func toInternalEntry(ext fsentry.Entry) InternalEntry {
 		Data:      ext.Data,
 	}
 }
-func toExternalEntry(in InternalEntry) fsentry.Entry {
-	ext := fsentry.Entry{
+func toExternalEntry(in InternalEntry) dto.Entry {
+	ext := dto.Entry{
 		ID:   in.ID,
 		Name: in.Name.String(),
 		Data: in.Data,
@@ -68,7 +68,7 @@ func New(
 	}
 }
 
-func (s Service) Create(path, name string, data interface{}) (*fsentry.Entry, error) {
+func (s Service) Create(path, name string, data interface{}) (*dto.Entry, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -86,7 +86,7 @@ func (s Service) Create(path, name string, data interface{}) (*fsentry.Entry, er
 
 	return s.createRaw(fullPath, name, id, dataJSON)
 }
-func (s Service) Get(path, name string) (*fsentry.Entry, error) {
+func (s Service) Get(path, name string) (*dto.Entry, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -110,7 +110,7 @@ func (s Service) Get(path, name string) (*fsentry.Entry, error) {
 	extEntry := toExternalEntry(*inEntry)
 	return &extEntry, nil
 }
-func (s Service) Move(path, oldName, newName string) (*fsentry.Entry, error) {
+func (s Service) Move(path, oldName, newName string) (*dto.Entry, error) {
 	// Check if the old entry name is a valid entry name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -185,7 +185,7 @@ func (s Service) Move(path, oldName, newName string) (*fsentry.Entry, error) {
 
 	return nil, nil
 }
-func (s Service) Update(path, name string, data interface{}) (*fsentry.Entry, error) {
+func (s Service) Update(path, name string, data interface{}) (*dto.Entry, error) {
 	oldExtEnt, err := s.Get(path, name)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func (s Service) Remove(path, name string) error {
 
 	return s.fs.RemoveFile(fullPath)
 }
-func (s Service) Duplicate(path, oldName, newName string) (*fsentry.Entry, error) {
+func (s Service) Duplicate(path, oldName, newName string) (*dto.Entry, error) {
 	oldExtEnt, err := s.Get(path, oldName)
 	if err != nil {
 		return nil, err
@@ -246,7 +246,7 @@ func (s Service) Duplicate(path, oldName, newName string) (*fsentry.Entry, error
 	return s.createRaw(newFullPath, newName, newID, oldExtEnt.Data)
 }
 
-func (s Service) createRaw(fullPath, name, id string, dataJSON json.RawMessage) (*fsentry.Entry, error) {
+func (s Service) createRaw(fullPath, name, id string, dataJSON json.RawMessage) (*dto.Entry, error) {
 	// Creating and filling in information about a new entry.
 	now := s.now().UTC()
 	inEntry := InternalEntry{

@@ -5,21 +5,26 @@
 package fsentry
 
 import (
-	binaryService "github.com/HardDie/fsentry/internal/binary/service"
-	entryService "github.com/HardDie/fsentry/internal/entry/service"
-	folderService "github.com/HardDie/fsentry/internal/folder/service"
+	binaryService "github.com/HardDie/fsentry/internal/binary"
+	entryService "github.com/HardDie/fsentry/internal/entry"
+	folderService "github.com/HardDie/fsentry/internal/folder"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
-	"github.com/HardDie/fsentry/internal/service"
-	"github.com/HardDie/fsentry/pkg/fsentry"
 )
 
+type Logger interface {
+	Debug(msg string, args ...any)
+	Info(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Error(msg string, args ...any)
+}
+
 type Config struct {
-	log      fsentry.Logger
+	log      Logger
 	root     string
 	isPretty bool
 }
 
-func WithLogger(log fsentry.Logger) func(cfg *Config) {
+func WithLogger(log Logger) func(cfg *Config) {
 	return func(cfg *Config) {
 		if log == nil {
 			return
@@ -33,7 +38,7 @@ func WithPretty() func(cfg *Config) {
 	}
 }
 
-func NewFSEntry(root string, ops ...func(fs *Config)) fsentry.IFSEntry {
+func NewFSEntry(root string, ops ...func(fs *Config)) *Service {
 	cfg := &Config{
 		root: root,
 	}
@@ -42,7 +47,7 @@ func NewFSEntry(root string, ops ...func(fs *Config)) fsentry.IFSEntry {
 	}
 
 	fileStorage := fsStorage.New()
-	return service.New(
+	return New(
 		cfg.log,
 		cfg.root,
 		cfg.isPretty,

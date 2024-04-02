@@ -1,4 +1,4 @@
-package fsentry
+package dto
 
 import (
 	"encoding/json"
@@ -38,38 +38,4 @@ type FolderInfo struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	// Data is a custom json payload for custom data.
 	Data json.RawMessage `json:"data"`
-}
-
-type Logger interface {
-	Debug(msg string, args ...any)
-	Info(msg string, args ...any)
-	Warn(msg string, args ...any)
-	Error(msg string, args ...any)
-}
-
-type IFSEntry interface {
-	Init() error
-	Drop() error
-	List(path ...string) (*List, error)
-
-	CreateFolder(name string, data interface{}, path ...string) (*FolderInfo, error)
-	GetFolder(name string, path ...string) (*FolderInfo, error)
-	MoveFolder(oldName, newName string, path ...string) (*FolderInfo, error)
-	UpdateFolder(name string, data interface{}, path ...string) (*FolderInfo, error)
-	RemoveFolder(name string, path ...string) error
-	DuplicateFolder(srcName, dstName string, path ...string) (*FolderInfo, error)
-	UpdateFolderNameWithoutTimestamp(oldName, newName string, path ...string) (*FolderInfo, error)
-
-	CreateEntry(name string, data interface{}, path ...string) (*Entry, error)
-	GetEntry(name string, path ...string) (*Entry, error)
-	MoveEntry(oldName, newName string, path ...string) (*Entry, error)
-	UpdateEntry(name string, data interface{}, path ...string) (*Entry, error)
-	RemoveEntry(name string, path ...string) error
-	DuplicateEntry(srcName, dstName string, path ...string) (*Entry, error)
-
-	CreateBinary(name string, data []byte, path ...string) error
-	GetBinary(name string, path ...string) ([]byte, error)
-	MoveBinary(oldName, newName string, path ...string) error
-	UpdateBinary(name string, data []byte, path ...string) error
-	RemoveBinary(name string, path ...string) error
 }

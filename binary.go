@@ -1,4 +1,4 @@
-package service
+package fsentry
 
 func (s *Service) CreateBinary(name string, data []byte, path ...string) error {
 	s.rwm.Lock()

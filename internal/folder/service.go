@@ -1,4 +1,4 @@
-package service
+package folder
 
 import (
 	"encoding/json"
@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/HardDie/fsentry/dto"
 	"github.com/HardDie/fsentry/internal/fs"
 	"github.com/HardDie/fsentry/internal/utils"
-	"github.com/HardDie/fsentry/pkg/fsentry"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 	"github.com/HardDie/fsentry/pkg/fsentry_types"
 )
@@ -32,7 +32,7 @@ type UpdateInfoRequest struct {
 	Data      *json.RawMessage `json:"data"`
 }
 
-func toInternalInfo(ext fsentry.FolderInfo) InternalInfo {
+func toInternalInfo(ext dto.FolderInfo) InternalInfo {
 	return InternalInfo{
 		ID:        ext.ID,
 		Name:      fsentry_types.QS(ext.Name),
@@ -41,8 +41,8 @@ func toInternalInfo(ext fsentry.FolderInfo) InternalInfo {
 		Data:      ext.Data,
 	}
 }
-func toExternalInfo(in InternalInfo) fsentry.FolderInfo {
-	ext := fsentry.FolderInfo{
+func toExternalInfo(in InternalInfo) dto.FolderInfo {
+	ext := dto.FolderInfo{
 		ID:   in.ID,
 		Name: in.Name.String(),
 		Data: in.Data,
@@ -76,7 +76,7 @@ func New(
 	}
 }
 
-func (s Service) Create(path, name string, data interface{}) (*fsentry.FolderInfo, error) {
+func (s Service) Create(path, name string, data interface{}) (*dto.FolderInfo, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -132,7 +132,7 @@ func (s Service) Create(path, name string, data interface{}) (*fsentry.FolderInf
 	}
 	return nil, err
 }
-func (s Service) Get(path, name string) (*fsentry.FolderInfo, error) {
+func (s Service) Get(path, name string) (*dto.FolderInfo, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -143,7 +143,7 @@ func (s Service) Get(path, name string) (*fsentry.FolderInfo, error) {
 
 	return s.getInfo(fullPath)
 }
-func (s Service) Move(path, oldName, newName string) (*fsentry.FolderInfo, error) {
+func (s Service) Move(path, oldName, newName string) (*dto.FolderInfo, error) {
 	// Check if the old folder name is a valid folder name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -216,7 +216,7 @@ func (s Service) Move(path, oldName, newName string) (*fsentry.FolderInfo, error
 
 	return nil, nil
 }
-func (s Service) Update(path, name string, data interface{}) (*fsentry.FolderInfo, error) {
+func (s Service) Update(path, name string, data interface{}) (*dto.FolderInfo, error) {
 	// Check if it is possible to translate a name into a valid ID.
 	id := utils.NameToID(name)
 	if id == "" {
@@ -268,7 +268,7 @@ func (s Service) Remove(path, name string) error {
 
 	return s.fs.RemoveFolder(fullPath)
 }
-func (s Service) Duplicate(path, oldName, newName string) (*fsentry.FolderInfo, error) {
+func (s Service) Duplicate(path, oldName, newName string) (*dto.FolderInfo, error) {
 	// Check if the old folder name is a valid folder name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -337,7 +337,7 @@ func (s Service) Duplicate(path, oldName, newName string) (*fsentry.FolderInfo, 
 	newExtInfo := toExternalInfo(newInInfo)
 	return &newExtInfo, nil
 }
-func (s Service) MoveWithoutTimestamp(path, oldName, newName string) (*fsentry.FolderInfo, error) {
+func (s Service) MoveWithoutTimestamp(path, oldName, newName string) (*dto.FolderInfo, error) {
 	// Check if the old folder name is a valid folder name.
 	oldID := utils.NameToID(oldName)
 	if oldID == "" {
@@ -410,7 +410,7 @@ func (s Service) MoveWithoutTimestamp(path, oldName, newName string) (*fsentry.F
 	return nil, nil
 }
 
-func (s Service) getInfo(fullPath string) (*fsentry.FolderInfo, error) {
+func (s Service) getInfo(fullPath string) (*dto.FolderInfo, error) {
 	infoFilePath := filepath.Join(fullPath, infoFileSuffix)
 
 	// If the folder exists, we will try to read information about the folder.
@@ -430,7 +430,7 @@ func (s Service) getInfo(fullPath string) (*fsentry.FolderInfo, error) {
 	extInfo := toExternalInfo(*inInfo)
 	return &extInfo, nil
 }
-func (s Service) updateInfo(fullPath string, req UpdateInfoRequest) (*fsentry.FolderInfo, error) {
+func (s Service) updateInfo(fullPath string, req UpdateInfoRequest) (*dto.FolderInfo, error) {
 	oldExtInfo, err := s.getInfo(fullPath)
 	if err != nil {
 		return nil, err

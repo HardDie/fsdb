@@ -1,4 +1,4 @@
-package service
+package folder
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/HardDie/fsentry/dto"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
-	"github.com/HardDie/fsentry/pkg/fsentry"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -217,7 +217,7 @@ func TestFolderMoveWithoutTimestamp(t *testing.T) {
 	})
 }
 
-func compareInfo(t *testing.T, got, want *fsentry.FolderInfo) bool {
+func compareInfo(t *testing.T, got, want *dto.FolderInfo) bool {
 	if want == nil && got == nil {
 		return true
 	}

@@ -1,35 +1,58 @@
-package service
+package fsentry
 
 import (
 	"path/filepath"
 	"sync"
 
+	"github.com/HardDie/fsentry/dto"
 	"github.com/HardDie/fsentry/internal/binary"
 	"github.com/HardDie/fsentry/internal/entry"
 	"github.com/HardDie/fsentry/internal/folder"
 	"github.com/HardDie/fsentry/internal/fs"
-	"github.com/HardDie/fsentry/pkg/fsentry"
 )
 
-var (
-	// validate interface.
-	_ fsentry.IFSEntry = &Service{}
-)
+type Binary interface {
+	Create(path, name string, data []byte) error
+	Get(path, name string) ([]byte, error)
+	Move(path, oldName, newName string) error
+	Update(path, name string, data []byte) error
+	Remove(path, name string) error
+	Duplicate(path, oldName, newName string) ([]byte, error)
+}
+
+type Entry interface {
+	Create(path, name string, data interface{}) (*dto.Entry, error)
+	Get(path, name string) (*dto.Entry, error)
+	Move(path, oldName, newName string) (*dto.Entry, error)
+	Update(path, name string, data interface{}) (*dto.Entry, error)
+	Remove(path, name string) error
+	Duplicate(path, oldName, newName string) (*dto.Entry, error)
+}
+
+type Folder interface {
+	Create(path, name string, data interface{}) (*dto.FolderInfo, error)
+	Get(path, name string) (*dto.FolderInfo, error)
+	Move(path, oldName, newName string) (*dto.FolderInfo, error)
+	Update(path, name string, data interface{}) (*dto.FolderInfo, error)
+	Remove(path, name string) error
+	Duplicate(path, oldName, newName string) (*dto.FolderInfo, error)
+	MoveWithoutTimestamp(path, oldName, newName string) (*dto.FolderInfo, error)
+}
 
 type Service struct {
-	log      fsentry.Logger
+	log      Logger
 	root     string
 	rwm      sync.RWMutex
 	isPretty bool
 
 	fs     fs.FS
-	binary binary.Service
-	entry  entry.Service
-	folder folder.Service
+	binary Binary
+	entry  Entry
+	folder Folder
 }
 
 func New(
-	log fsentry.Logger,
+	log Logger,
 	root string,
 	isPretty bool,
 	fs fs.FS,
@@ -92,7 +115,7 @@ func (s *Service) Drop() error {
 }
 
 // List allows you to get a list of objects (folders and entries) on the selected path.
-func (s *Service) List(path ...string) (*fsentry.List, error) {
+func (s *Service) List(path ...string) (*dto.List, error) {
 	s.rwm.RLock()
 	defer s.rwm.RUnlock()
 

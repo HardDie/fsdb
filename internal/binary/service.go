@@ -1,4 +1,4 @@
-package service
+package binary
 
 import (
 	"path/filepath"

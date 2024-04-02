@@ -1,4 +1,4 @@
-package service
+package entry
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/HardDie/fsentry/dto"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
-	"github.com/HardDie/fsentry/pkg/fsentry"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -176,7 +176,7 @@ func TestEntryDuplicate(t *testing.T) {
 	})
 }
 
-func compareEntry(t *testing.T, got, want *fsentry.Entry) bool {
+func compareEntry(t *testing.T, got, want *dto.Entry) bool {
 	if want == nil && got == nil {
 		return true
 	}
