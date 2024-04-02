@@ -17,8 +17,6 @@ func TestFolder(t *testing.T) {
 	defer folderDB.Drop()
 
 	t.Run("create", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_folder_create"))
 		err := db.Init()
 		if err != nil {
@@ -62,8 +60,6 @@ func TestFolder(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_folder_get"))
 		err := db.Init()
 		if err != nil {
@@ -109,8 +105,6 @@ func TestFolder(t *testing.T) {
 	})
 
 	t.Run("move", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_folder_move"))
 		err := db.Init()
 		if err != nil {
@@ -169,8 +163,6 @@ func TestFolder(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_folder_update"))
 		err := db.Init()
 		if err != nil {
@@ -212,8 +204,6 @@ func TestFolder(t *testing.T) {
 	})
 
 	t.Run("remove", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_folder_remove"))
 		err := db.Init()
 		if err != nil {
@@ -264,8 +254,6 @@ func TestEntry(t *testing.T) {
 	defer folderDB.Drop()
 
 	t.Run("create", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_entry_create"))
 		err := db.Init()
 		if err != nil {
@@ -273,25 +261,25 @@ func TestEntry(t *testing.T) {
 		}
 
 		// Try to create entry with bad name
-		err = db.CreateEntry("", nil)
+		_, err = db.CreateEntry("", nil)
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to create entry in not exist subdirectory
-		err = db.CreateEntry("bad_path", nil, "bad")
+		_, err = db.CreateEntry("bad_path", nil, "bad")
 		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path for folder")
 		}
 
 		// Create entry
-		err = db.CreateEntry("some_entry", nil)
+		_, err = db.CreateEntry("some_entry", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Try to create duplicate
-		err = db.CreateEntry("some_entry", nil)
+		_, err = db.CreateEntry("some_entry", nil)
 		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Entry already exist")
 		}
@@ -303,8 +291,6 @@ func TestEntry(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_entry_get"))
 		err := db.Init()
 		if err != nil {
@@ -329,7 +315,7 @@ func TestEntry(t *testing.T) {
 			t.Fatal("Bad path")
 		}
 
-		err = db.CreateEntry("some_entry", nil)
+		_, err = db.CreateEntry("some_entry", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -350,8 +336,6 @@ func TestEntry(t *testing.T) {
 	})
 
 	t.Run("move", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_entry_move"))
 		err := db.Init()
 		if err != nil {
@@ -359,46 +343,46 @@ func TestEntry(t *testing.T) {
 		}
 
 		// Try to move not exist entry
-		err = db.MoveEntry("not_exist", "new_not_exist")
+		_, err = db.MoveEntry("not_exist", "new_not_exist")
 		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 
 		// Try to move bad path
-		err = db.MoveEntry("not_exist", "new_not_exist", "bad_path")
+		_, err = db.MoveEntry("not_exist", "new_not_exist", "bad_path")
 		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
-		err = db.CreateEntry("first_entry", nil)
+		_, err = db.CreateEntry("first_entry", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = db.CreateEntry("second_entry", nil)
+		_, err = db.CreateEntry("second_entry", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Try to move bad name
-		err = db.MoveEntry("", "new_not_exist")
+		_, err = db.MoveEntry("", "new_not_exist")
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move bad name
-		err = db.MoveEntry("first_entry", "")
+		_, err = db.MoveEntry("first_entry", "")
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to move into exist folder
-		err = db.MoveEntry("first_entry", "second_entry")
+		_, err = db.MoveEntry("first_entry", "second_entry")
 		if !errors.Is(err, fsentry_error.ErrorExist) {
 			t.Fatal("Entry already exist")
 		}
 
-		err = db.MoveEntry("first_entry", "new_first_entry")
+		_, err = db.MoveEntry("first_entry", "new_first_entry")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -410,8 +394,6 @@ func TestEntry(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_entry_update"))
 		err := db.Init()
 		if err != nil {
@@ -419,29 +401,29 @@ func TestEntry(t *testing.T) {
 		}
 
 		// Try to update bad name
-		err = db.UpdateEntry("", nil)
+		_, err = db.UpdateEntry("", nil)
 		if !errors.Is(err, fsentry_error.ErrorBadName) {
 			t.Fatal("Bad name")
 		}
 
 		// Try to update not exist entry
-		err = db.UpdateEntry("not_exist_entry", nil)
+		_, err = db.UpdateEntry("not_exist_entry", nil)
 		if !errors.Is(err, fsentry_error.ErrorNotExist) {
 			t.Fatal("Entry not exist")
 		}
 
 		// Try to update bad path entry
-		err = db.UpdateEntry("not_exist_entry", nil, "bad_path")
+		_, err = db.UpdateEntry("not_exist_entry", nil, "bad_path")
 		if !errors.Is(err, fsentry_error.ErrorBadPath) {
 			t.Fatal("Bad path")
 		}
 
-		err = db.CreateEntry("some_entry", 5)
+		_, err = db.CreateEntry("some_entry", 5)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = db.UpdateEntry("some_entry", 15)
+		_, err = db.UpdateEntry("some_entry", 15)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -453,8 +435,6 @@ func TestEntry(t *testing.T) {
 	})
 
 	t.Run("remove", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_entry_remove"))
 		err := db.Init()
 		if err != nil {
@@ -473,7 +453,7 @@ func TestEntry(t *testing.T) {
 			t.Fatal("Entry not exist")
 		}
 
-		err = db.CreateEntry("some_entry", nil)
+		_, err = db.CreateEntry("some_entry", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -505,8 +485,6 @@ func TestBinary(t *testing.T) {
 	defer folderDB.Drop()
 
 	t.Run("create", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_binary_create"))
 		err := db.Init()
 		if err != nil {
@@ -544,8 +522,6 @@ func TestBinary(t *testing.T) {
 	})
 
 	t.Run("get", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_binary_get"))
 		err := db.Init()
 		if err != nil {
@@ -591,8 +567,6 @@ func TestBinary(t *testing.T) {
 	})
 
 	t.Run("move", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_binary_move"))
 		err := db.Init()
 		if err != nil {
@@ -651,8 +625,6 @@ func TestBinary(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_binary_update"))
 		err := db.Init()
 		if err != nil {
@@ -710,8 +682,6 @@ func TestBinary(t *testing.T) {
 	})
 
 	t.Run("remove", func(t *testing.T) {
-		t.Parallel()
-
 		db := NewFSEntry(filepath.Join("test", "test_binary_remove"))
 		err := db.Init()
 		if err != nil {

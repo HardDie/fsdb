@@ -65,7 +65,7 @@ func BenchmarkCreateFile(b *testing.B) {
 	}
 	defer os.RemoveAll(dir)
 
-	fs := NewFS()
+	fs := New()
 
 	for i := 0; i < b.N; i++ {
 		err = fs.CreateFile(filepath.Join(dir, strconv.Itoa(i)), []byte{byte(i), byte(i), byte(i), byte(i)})
@@ -81,7 +81,7 @@ func BenchmarkUpdateFile(b *testing.B) {
 	}
 	defer os.RemoveAll(dir)
 
-	fs := NewFS()
+	fs := New()
 
 	filePath := filepath.Join(dir, "update.bin")
 	err = fs.CreateFile(filePath, nil)
@@ -103,7 +103,7 @@ func BenchmarkMoveFile(b *testing.B) {
 	}
 	defer os.RemoveAll(dir)
 
-	fs := NewFS()
+	fs := New()
 
 	currentName := "-1"
 	nextName := ""
@@ -129,7 +129,7 @@ func BenchmarkUpdateViaMoveFile(b *testing.B) {
 	}
 	defer os.RemoveAll(dir)
 
-	fs := NewFS()
+	fs := New()
 
 	filePath := filepath.Join(dir, "update.bin")
 	err = fs.CreateFile(filePath, nil)

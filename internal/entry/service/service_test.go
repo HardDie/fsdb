@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/HardDie/fsentry/internal/entry"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
+	"github.com/HardDie/fsentry/pkg/fsentry"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -19,7 +19,7 @@ func TestEntryCreate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		_, err = s.Create(dir, "success", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -36,7 +36,7 @@ func TestEntryGet(t *testing.T) {
 
 		name := "success"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		ent, err := s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -63,7 +63,7 @@ func TestEntryMove(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -104,7 +104,7 @@ func TestEntryUpdate(t *testing.T) {
 
 		name := "success"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		ent, err := s.Create(dir, name, []byte("hello world"))
 		if err != nil {
 			t.Fatal(err)
@@ -137,7 +137,7 @@ func TestEntryRemove(t *testing.T) {
 
 		name := "success"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		_, err = s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -160,7 +160,7 @@ func TestEntryDuplicate(t *testing.T) {
 		oldName := "success"
 		newName := "success_duplicate"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		ent, err := s.Create(dir, oldName, []byte("some data"))
 		if err != nil {
 			t.Fatal(err)
@@ -176,7 +176,7 @@ func TestEntryDuplicate(t *testing.T) {
 	})
 }
 
-func compareEntry(t *testing.T, got, want *entry.Entry) bool {
+func compareEntry(t *testing.T, got, want *fsentry.Entry) bool {
 	if want == nil && got == nil {
 		return true
 	}

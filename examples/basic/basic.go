@@ -47,12 +47,12 @@ func main() {
 	/* Entry */
 
 	// Create an entry in the root of the repository.
-	err = db.CreateEntry("e1", Data{"hello", 10})
+	_, err = db.CreateEntry("e1", Data{"hello", 10})
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Create an entry in the "f1" folder.
-	err = db.CreateEntry("e2", Data{"bye", 20}, "f1")
+	_, err = db.CreateEntry("e2", Data{"bye", 20}, "f1")
 	if err != nil {
 		log.Fatal(err)
 	}

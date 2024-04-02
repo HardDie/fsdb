@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/HardDie/fsentry/internal/folder"
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
+	"github.com/HardDie/fsentry/pkg/fsentry"
 	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
@@ -19,7 +19,7 @@ func TestFolderCreate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		_, err = s.Create(dir, "success", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -36,7 +36,7 @@ func TestFolderGet(t *testing.T) {
 
 		name := "success"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		info, err := s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -62,7 +62,7 @@ func TestFolderMove(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -103,7 +103,7 @@ func TestFolderUpdate(t *testing.T) {
 
 		name := "success"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		info, err := s.Create(dir, name, []byte("hello world"))
 		if err != nil {
 			t.Fatal(err)
@@ -136,7 +136,7 @@ func TestFolderRemove(t *testing.T) {
 
 		name := "success"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		_, err = s.Create(dir, name, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -159,7 +159,7 @@ func TestFolderDuplicate(t *testing.T) {
 		oldName := "success"
 		newName := "success_duplicate"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		ent, err := s.Create(dir, oldName, []byte("some data"))
 		if err != nil {
 			t.Fatal(err)
@@ -185,7 +185,7 @@ func TestFolderMoveWithoutTimestamp(t *testing.T) {
 		oldName := "success"
 		newName := "success_moved"
 
-		s := New(fsStorage.NewFS(), true)
+		s := New(fsStorage.New(), true)
 		info, err := s.Create(dir, oldName, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -217,7 +217,7 @@ func TestFolderMoveWithoutTimestamp(t *testing.T) {
 	})
 }
 
-func compareInfo(t *testing.T, got, want *folder.Info) bool {
+func compareInfo(t *testing.T, got, want *fsentry.FolderInfo) bool {
 	if want == nil && got == nil {
 		return true
 	}

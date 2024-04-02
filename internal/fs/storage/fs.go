@@ -23,7 +23,7 @@ const (
 
 type FS struct{}
 
-func NewFS() FS {
+func New() FS {
 	return FS{}
 }
 

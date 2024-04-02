@@ -21,7 +21,7 @@ func TestCreateFile(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filepath.Join(dir, "success"), nil)
 		if err != nil {
 			t.Fatal(err)
@@ -37,7 +37,7 @@ func TestCreateFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "exist")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -61,7 +61,7 @@ func TestCreateFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "exist")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(filePath)
 		if err != nil {
 			t.Fatal(err)
@@ -89,7 +89,7 @@ func TestCreateFile(t *testing.T) {
 			t.Fatal("error updating permission", err)
 		}
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filepath.Join(dir, "permissions"), []byte("hello"))
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
@@ -110,7 +110,7 @@ func TestReadFile(t *testing.T) {
 		filePath := filepath.Join(dir, "success")
 		data := []byte("hello")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, data)
 		if err != nil {
 			t.Fatal(err)
@@ -134,7 +134,7 @@ func TestReadFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "invalid")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(filePath)
 		if err != nil {
 			t.Fatal(err)
@@ -156,7 +156,7 @@ func TestReadFile(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		_, err = f.ReadFile(filepath.Join(dir, "not_exist"))
 		if err == nil {
 			t.Fatal("file not exist, must be error")
@@ -175,7 +175,7 @@ func TestReadFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -211,7 +211,7 @@ func TestReadFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -243,7 +243,7 @@ func TestUpdateFile(t *testing.T) {
 		filePath := filepath.Join(dir, "success")
 		data := []byte("hello")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("init"))
 		if err != nil {
 			t.Fatal(err)
@@ -272,7 +272,7 @@ func TestUpdateFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "invalid")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(filePath)
 		if err != nil {
 			t.Fatal(err)
@@ -294,7 +294,7 @@ func TestUpdateFile(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		err = f.UpdateFile(filepath.Join(dir, "not_exist"), []byte("hello"))
 		if err == nil {
 			t.Fatal("file not exist, must be error")
@@ -313,7 +313,7 @@ func TestUpdateFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -349,7 +349,7 @@ func TestUpdateFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -381,7 +381,7 @@ func TestRemoveFile(t *testing.T) {
 		filePath := filepath.Join(dir, "success")
 		data := []byte("hello")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, data)
 		if err != nil {
 			t.Fatal(err)
@@ -410,7 +410,7 @@ func TestRemoveFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "empty_folder")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(filePath)
 		if err != nil {
 			t.Fatal(err)
@@ -431,7 +431,7 @@ func TestRemoveFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "not_empty_folder")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(filepath.Join(filePath, "data"))
 		if err != nil {
 			t.Fatal(err)
@@ -453,7 +453,7 @@ func TestRemoveFile(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		err = f.RemoveFile(filepath.Join(dir, "not_exist"))
 		if err == nil {
 			t.Fatal("file not exist, must be error")
@@ -472,7 +472,7 @@ func TestRemoveFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -509,7 +509,7 @@ func TestRemoveFile(t *testing.T) {
 
 		filePath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(filePath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -535,7 +535,7 @@ func TestCreateFolder(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(filepath.Join(dir, "success"))
 		if err != nil {
 			t.Fatal(err)
@@ -551,7 +551,7 @@ func TestCreateFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "exist")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(folderPath)
 		if err != nil {
 			t.Fatal(err)
@@ -575,7 +575,7 @@ func TestCreateFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "exist")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(folderPath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -603,7 +603,7 @@ func TestCreateFolder(t *testing.T) {
 			t.Fatal("error updating permission", err)
 		}
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(filepath.Join(dir, "permissions"))
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
@@ -622,7 +622,7 @@ func TestCreateAllFolder(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(filepath.Join(dir, "success"))
 		if err != nil {
 			t.Fatal(err)
@@ -637,7 +637,7 @@ func TestCreateAllFolder(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(filepath.Join(dir, "middle", "success"))
 		if err != nil {
 			t.Fatal(err)
@@ -654,7 +654,7 @@ func TestCreateAllFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "exist")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(folderPath)
 		if err != nil {
 			t.Fatal(err)
@@ -675,7 +675,7 @@ func TestCreateAllFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "exist")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(folderPath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -703,7 +703,7 @@ func TestCreateAllFolder(t *testing.T) {
 			t.Fatal("error updating permission", err)
 		}
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(filepath.Join(dir, "permissions"))
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
@@ -724,7 +724,7 @@ func TestRemoveFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "success")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(folderPath)
 		if err != nil {
 			t.Fatal(err)
@@ -746,7 +746,7 @@ func TestRemoveFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "middle", "success")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateAllFolder(folderPath)
 		if err != nil {
 			t.Fatal(err)
@@ -768,7 +768,7 @@ func TestRemoveFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "file")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFile(folderPath, []byte("hello"))
 		if err != nil {
 			t.Fatal(err)
@@ -789,7 +789,7 @@ func TestRemoveFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(folderPath)
 		if err != nil {
 			t.Fatal(err)
@@ -826,7 +826,7 @@ func TestRemoveFolder(t *testing.T) {
 
 		folderPath := filepath.Join(dir, "permissions")
 
-		f := NewFS()
+		f := New()
 		err = f.CreateFolder(folderPath)
 		if err != nil {
 			t.Fatal(err)
