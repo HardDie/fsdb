@@ -10,7 +10,7 @@ import (
 
 	acl "github.com/hectane/go-acl"
 
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	"github.com/HardDie/fsentry/internal/fs"
 )
 
 func TestCreateFile(t *testing.T) {
@@ -47,8 +47,8 @@ func TestCreateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fs.ErrorFileExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileExist, err)
 		}
 	})
 
@@ -71,8 +71,28 @@ func TestCreateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fs.ErrorFileExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileExist, err)
+		}
+	})
+
+	t.Run("bad_path", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "create_file_bad_path")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		filePath := filepath.Join(dir, "bad_path", "file")
+
+		f := New()
+
+		err = f.CreateFile(filePath, []byte("hello"))
+		if err == nil {
+			t.Fatal("bad path, must be error")
+		}
+		if !errors.Is(err, fs.ErrorBadPath) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorBadPath, err)
 		}
 	})
 
@@ -94,8 +114,8 @@ func TestCreateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 }
@@ -144,8 +164,8 @@ func TestReadFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("not file, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, fs.ErrorFileNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileNotExist, err)
 		}
 	})
 
@@ -161,8 +181,8 @@ func TestReadFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file not exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, fs.ErrorFileNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileNotExist, err)
 		}
 	})
 
@@ -197,8 +217,8 @@ func TestReadFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 
@@ -227,8 +247,8 @@ func TestReadFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 }
@@ -282,8 +302,8 @@ func TestUpdateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("not file, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, fs.ErrorFileNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileNotExist, err)
 		}
 	})
 
@@ -299,8 +319,8 @@ func TestUpdateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file not exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, fs.ErrorFileNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileNotExist, err)
 		}
 	})
 
@@ -335,8 +355,8 @@ func TestUpdateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 
@@ -365,8 +385,8 @@ func TestUpdateFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 }
@@ -396,8 +416,8 @@ func TestRemoveFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file was removed, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, fs.ErrorFileNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFileNotExist, err)
 		}
 	})
 
@@ -441,8 +461,8 @@ func TestRemoveFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("not file, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fs.ErrorFolderNotEmpty) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFolderNotEmpty, err)
 		}
 	})
 
@@ -458,8 +478,8 @@ func TestRemoveFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("file not exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, fs.ErrorNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorNotExist, err)
 		}
 	})
 
@@ -494,8 +514,8 @@ func TestRemoveFile(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 
@@ -561,8 +581,8 @@ func TestCreateFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("folder already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fs.ErrorFolderExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFolderExist, err)
 		}
 	})
 
@@ -585,8 +605,28 @@ func TestCreateFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fs.ErrorFolderExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFolderExist, err)
+		}
+	})
+
+	t.Run("bad_path", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "create_folder_bad_path")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		folderPath := filepath.Join(dir, "bad", "path")
+
+		f := New()
+
+		err = f.CreateFolder(folderPath)
+		if err == nil {
+			t.Fatal("bad path, must be error")
+		}
+		if !errors.Is(err, fs.ErrorBadPath) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorBadPath, err)
 		}
 	})
 
@@ -608,8 +648,8 @@ func TestCreateFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 }
@@ -685,8 +725,8 @@ func TestCreateAllFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("file already exist, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorExist, err)
+		if !errors.Is(err, fs.ErrorFolderExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorFolderExist, err)
 		}
 	})
 
@@ -708,8 +748,8 @@ func TestCreateAllFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 }
@@ -751,6 +791,23 @@ func TestRemoveFolder(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		err = f.RemoveFolder(folderPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("not_exist", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "remove_folder_not_exist")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		folderPath := filepath.Join(dir, "not", "exist")
+
+		f := New()
 
 		err = f.RemoveFolder(folderPath)
 		if err != nil {
@@ -811,8 +868,8 @@ func TestRemoveFolder(t *testing.T) {
 		if err == nil {
 			t.Fatal("don't have permission, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorPermissions) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 		}
 	})
 
@@ -843,8 +900,8 @@ func TestRemoveFolder(t *testing.T) {
 			if err == nil {
 				t.Fatal("on windows must be error!")
 			}
-			if !errors.Is(err, fsentry_error.ErrorPermissions) {
-				t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorPermissions, err)
+			if !errors.Is(err, fs.ErrorPermission) {
+				t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
 			}
 		} else {
 			if err != nil {

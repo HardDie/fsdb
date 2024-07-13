@@ -11,7 +11,7 @@ import (
 
 	"github.com/otiai10/copy"
 
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
+	"github.com/HardDie/fsentry/internal/fs"
 )
 
 const (
@@ -31,30 +31,46 @@ func New() FS {
 func (r FS) CreateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, CreateFileFlags, CreateFilePerm)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			if errors.Is(e, fsentry_error.ErrorIsDirectory) {
-				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
+			switch {
+			case os.IsExist(pathErr):
+				return fs.ErrorFileExist
+			case os.IsNotExist(pathErr):
+				return fs.ErrorBadPath
+			case os.IsPermission(pathErr):
+				return fs.ErrorPermission
 			}
-			return e
 		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		var syscallErr syscall.Errno
+		if errors.As(err, &syscallErr) {
+			if runtime.GOOS == "windows" {
+				switch uintptr(syscallErr) {
+				case 536870954:
+					return fs.ErrorFileExist
+				}
+			}
+		}
+		log.Printf("fs.CreateFile() os.OpenFile: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	defer func() {
 		if err = file.Sync(); err != nil {
-			log.Printf("CreateFile(): error sync file %q: %s", path, err.Error())
+			log.Printf("fs.CreateFile(): error sync file %q: %s", path, err.Error())
 		}
 		if err = file.Close(); err != nil {
-			log.Printf("CreateFile(): error close file %q: %s", path, err.Error())
+			log.Printf("fs.CreateFile(): error close file %q: %s", path, err.Error())
 		}
 	}()
 
 	n, err := file.Write(data)
 	if err != nil {
 		// TODO: process different types of errors
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.CreateFile() file.Write: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	if n != len(data) {
-		log.Printf("CreateFile(): the size of input and written data is different. Received: %d, written: %d", len(data), n)
+		log.Printf("fs.CreateFile(): the size of input and written data is different. Received: %d, written: %d", len(data), n)
 	}
 	return nil
 }
@@ -63,33 +79,48 @@ func (r FS) CreateFile(path string, data []byte) error {
 func (r FS) UpdateFile(path string, data []byte) error {
 	file, err := os.OpenFile(path, UpdateFileFlags, CreateFilePerm)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
 			switch {
-			case errors.Is(e, fsentry_error.ErrorNotFile):
-				return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
-			case errors.Is(e, fsentry_error.ErrorIsDirectory):
-				return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+			case os.IsNotExist(pathErr):
+				return fs.ErrorFileNotExist
+			case os.IsPermission(pathErr):
+				return fs.ErrorPermission
 			}
-			return e
 		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		var syscallErr syscall.Errno
+		if errors.As(err, &syscallErr) {
+			switch uintptr(syscallErr) {
+			case 21:
+				return fs.ErrorFileNotExist
+			}
+			if runtime.GOOS == "windows" {
+				switch uintptr(syscallErr) {
+				case 536870954:
+					return fs.ErrorFileNotExist
+				}
+			}
+		}
+		log.Printf("fs.UpdateFile() os.OpenFile: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	defer func() {
 		if err = file.Sync(); err != nil {
-			log.Printf("UpdateFile(): error sync file %q: %s", path, err.Error())
+			log.Printf("fs.UpdateFile(): error sync file %q: %s", path, err.Error())
 		}
 		if err = file.Close(); err != nil {
-			log.Printf("UpdateFile(): error close file %q: %s", path, err.Error())
+			log.Printf("fs.UpdateFile(): error close file %q: %s", path, err.Error())
 		}
 	}()
 
 	n, err := file.Write(data)
 	if err != nil {
 		// TODO: process different types of errors
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.UpdateFile() file.Write: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	if n != len(data) {
-		log.Printf("UpdateFile(): the size of input and written data is different. Received: %d, written: %d", len(data), n)
+		log.Printf("fs.UpdateFile(): the size of input and written data is different. Received: %d, written: %d", len(data), n)
 	}
 	return nil
 }
@@ -98,43 +129,63 @@ func (r FS) UpdateFile(path string, data []byte) error {
 func (r FS) ReadFile(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			return nil, e
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
+			switch {
+			case os.IsNotExist(pathErr):
+				return nil, fs.ErrorFileNotExist
+			case os.IsPermission(pathErr):
+				return nil, fs.ErrorPermission
+			}
 		}
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.ReadFile() os.OpenFile: %T %s", err, err.Error())
+		return nil, fs.ErrorInternal
 	}
 	defer func() {
 		var err error
 		if err = file.Close(); err != nil {
-			log.Printf("ReadFile(): error close file %q: %s", path, err.Error())
+			log.Printf("fs.ReadFile(): error close file %q: %s", path, err.Error())
 		}
 	}()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			switch {
-			case errors.Is(e, fsentry_error.ErrorNotFile):
-				return nil, fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
-			case errors.Is(e, fsentry_error.ErrorIncorrectFunction):
-				return nil, fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
+		var syscallErr syscall.Errno
+		if errors.As(err, &syscallErr) {
+			switch uintptr(syscallErr) {
+			case 21:
+				return nil, fs.ErrorFileNotExist
 			}
-			return nil, e
+			if runtime.GOOS == "windows" {
+				switch uintptr(syscallErr) {
+				case 1:
+					return nil, fs.ErrorFileNotExist
+				}
+			}
 		}
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.ReadFile() io.ReadAll: %T %s", err, err.Error())
+		return nil, fs.ErrorInternal
 	}
 	return data, nil
 }
 
 // RemoveFile allows you to delete a file or an empty folder.
-// If the folder is not empty, an ErrorExist error will be returned.
 func (r FS) RemoveFile(path string) error {
 	err := os.Remove(path)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			return e
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
+			switch {
+			case os.IsExist(pathErr):
+				return fs.ErrorFolderNotEmpty
+			case os.IsNotExist(pathErr):
+				return fs.ErrorNotExist
+			case os.IsPermission(pathErr):
+				return fs.ErrorPermission
+			}
 		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.RemoveFile() os.Remove: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	return nil
 }
@@ -143,10 +194,19 @@ func (r FS) RemoveFile(path string) error {
 func (r FS) CreateFolder(path string) error {
 	err := os.Mkdir(path, CreateDirPerm)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			return e
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
+			switch {
+			case os.IsExist(pathErr):
+				return fs.ErrorFolderExist
+			case os.IsNotExist(pathErr):
+				return fs.ErrorBadPath
+			case os.IsPermission(pathErr):
+				return fs.ErrorPermission
+			}
 		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.CreateFolder() os.Mkdir: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	return nil
 }
@@ -157,16 +217,24 @@ func (r FS) CreateFolder(path string) error {
 func (r FS) CreateAllFolder(path string) error {
 	err := os.MkdirAll(path, CreateDirPerm)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
 			switch {
-			case errors.Is(e, fsentry_error.ErrorNotDirectory):
-				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
-			case errors.Is(e, fsentry_error.ErrorNotExist): // windows do not treat files and folders in the same way
-				return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
+			case os.IsNotExist(pathErr):
+				return fs.ErrorFolderExist
+			case os.IsPermission(pathErr):
+				return fs.ErrorPermission
 			}
-			return e
 		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		var syscallErr syscall.Errno
+		if errors.As(err, &syscallErr) {
+			switch uintptr(syscallErr) {
+			case 20:
+				return fs.ErrorFolderExist
+			}
+		}
+		log.Printf("fs.CreateAllFolder() os.MkdirAll: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	return nil
 }
@@ -175,10 +243,15 @@ func (r FS) CreateAllFolder(path string) error {
 func (r FS) RemoveFolder(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
-		if e := isKnownError(err); e != nil {
-			return e
+		var pathErr *iofs.PathError
+		if errors.As(err, &pathErr) {
+			switch {
+			case os.IsPermission(pathErr):
+				return fs.ErrorPermission
+			}
 		}
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.RemoveFolder() os.RemoveAll: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	return nil
 }
@@ -188,7 +261,8 @@ func (r FS) Rename(oldPath, newPath string) error {
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
 		// TODO: process different types of errors
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.Rename() os.Rename: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	return nil
 }
@@ -198,7 +272,8 @@ func (r FS) CopyFolder(srcPath, dstPath string) error {
 	err := copy.Copy(srcPath, dstPath)
 	if err != nil {
 		// TODO: process different types of errors
-		return fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.CopyFolder() copy.Copy: %T %s", err, err.Error())
+		return fs.ErrorInternal
 	}
 	return nil
 }
@@ -208,14 +283,20 @@ func (r FS) List(path string) ([]os.FileInfo, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		// TODO: process different types of errors
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.List() os.Open: %T %s", err, err.Error())
+		return nil, fs.ErrorInternal
 	}
-	defer f.Close()
+	defer func() {
+		if err = f.Close(); err != nil {
+			log.Printf("fs.List(): error close file %q: %s", path, err.Error())
+		}
+	}()
 
 	files, err := f.Readdir(0)
 	if err != nil {
 		// TODO: process different types of errors
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.List() f.Readdir: %T %s", err, err.Error())
+		return nil, fs.ErrorInternal
 	}
 	return files, nil
 }
@@ -229,12 +310,13 @@ func (r FS) IsFileExist(path string) (isExist bool, err error) {
 			return false, nil
 		}
 		// other error
-		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.IsFileExist() os.Stat: %T %s", err, err.Error())
+		return false, fs.ErrorInternal
 	}
 
 	// check if it is not a folder
 	if stat.IsDir() {
-		return false, fsentry_error.ErrorBadPath
+		return false, fs.ErrorIsDir
 	}
 
 	// entry exists
@@ -250,46 +332,15 @@ func (r FS) IsFolderExist(path string) (isExist bool, err error) {
 			return false, nil
 		}
 		// other error
-		return false, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		log.Printf("fs.IsFolderExist() os.Stat: %T %s", err, err.Error())
+		return false, fs.ErrorInternal
 	}
 
 	// check if it is a folder
 	if !stat.IsDir() {
-		return false, fsentry_error.ErrorBadPath
+		return false, fs.ErrorIsFile
 	}
 
 	// folder exists
 	return true, nil
-}
-
-func isKnownError(err error) error {
-	var pathErr *iofs.PathError
-	if errors.As(err, &pathErr) {
-		switch {
-		case os.IsExist(pathErr):
-			return fsentry_error.Wrap(err, fsentry_error.ErrorExist)
-		case os.IsNotExist(pathErr):
-			return fsentry_error.Wrap(err, fsentry_error.ErrorNotExist)
-		case os.IsPermission(pathErr):
-			return fsentry_error.Wrap(err, fsentry_error.ErrorPermissions)
-		}
-	}
-	var syscallErr syscall.Errno
-	if errors.As(err, &syscallErr) {
-		switch uintptr(syscallErr) {
-		case 20:
-			return fsentry_error.Wrap(err, fsentry_error.ErrorNotDirectory)
-		case 21:
-			return fsentry_error.Wrap(err, fsentry_error.ErrorNotFile)
-		}
-		if runtime.GOOS == "windows" {
-			switch uintptr(syscallErr) {
-			case 1:
-				return fsentry_error.Wrap(err, fsentry_error.ErrorIncorrectFunction)
-			case 536870954:
-				return fsentry_error.Wrap(err, fsentry_error.ErrorIsDirectory)
-			}
-		}
-	}
-	return nil
 }

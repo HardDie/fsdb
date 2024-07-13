@@ -1,6 +1,9 @@
 package fs
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 type FS interface {
 	CreateFile(path string, data []byte) error
@@ -16,3 +19,16 @@ type FS interface {
 	IsFileExist(path string) (isExist bool, err error)
 	IsFolderExist(path string) (isExist bool, err error)
 }
+
+var (
+	ErrorBadPath        = errors.New("bad path")
+	ErrorNotExist       = errors.New("file or folder not exist")
+	ErrorPermission     = errors.New("not enough permissions")
+	ErrorFileExist      = errors.New("file already exist")
+	ErrorFileNotExist   = errors.New("file not exist")
+	ErrorIsFile         = errors.New("it's a file")
+	ErrorFolderNotEmpty = errors.New("folder not empty")
+	ErrorFolderExist    = errors.New("folder already exist")
+	ErrorIsDir          = errors.New("it's a directory")
+	ErrorInternal       = errors.New("internal")
+)
