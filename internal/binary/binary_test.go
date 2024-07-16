@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	fsStorage "github.com/HardDie/fsentry/internal/fs/storage"
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 func TestBinaryCreate(t *testing.T) {
@@ -88,8 +87,8 @@ func TestBinaryMove(t *testing.T) {
 		if err == nil {
 			t.Fatal("binary was moved, must be error")
 		}
-		if !errors.Is(err, fsentry_error.ErrorNotExist) {
-			t.Fatalf("error wait: %q; got: %q", fsentry_error.ErrorNotExist, err)
+		if !errors.Is(err, ErrorNotExist) {
+			t.Fatalf("error wait: %q; got: %q", ErrorNotExist, err)
 		}
 	})
 }
