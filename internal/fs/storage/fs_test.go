@@ -421,6 +421,7 @@ func TestRemoveFile(t *testing.T) {
 		}
 	})
 
+	// You can remove empty folder
 	t.Run("empty_folder", func(t *testing.T) {
 		dir, err := os.MkdirTemp("", "remove_file_empty_folder")
 		if err != nil {
@@ -907,6 +908,246 @@ func TestRemoveFolder(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+		}
+	})
+}
+func TestRename(t *testing.T) {
+	t.Run("file success", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_file_success")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_success")
+		newFilePath := filepath.Join(dir, "new_success")
+		data := []byte("hello")
+
+		f := New()
+		err = f.CreateFile(oldFilePath, data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = f.Rename(oldFilePath, newFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := f.ReadFile(newFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(data, resp) {
+			t.Fatalf("bad data readed; got: %q, want: %q", string(resp), string(data))
+		}
+	})
+
+	t.Run("not_exist", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_file_not_exist")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_not_exist")
+		newFilePath := filepath.Join(dir, "new_not_exist")
+
+		f := New()
+		err = f.Rename(oldFilePath, newFilePath)
+		if err == nil {
+			t.Fatal("file not exist, must be error")
+		}
+		if !errors.Is(err, fs.ErrorNotExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorNotExist, err)
+		}
+	})
+
+	t.Run("file_permissions_src", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_file_permissions_src")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_file_permissions")
+		newFilePath := filepath.Join(dir, "new_file_permissions")
+
+		f := New()
+		err = f.CreateFile(oldFilePath, []byte("hello"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Forbid writing
+		err = chmod(dir, 0000)
+		if err != nil {
+			t.Fatal("error updating permission", err)
+		}
+		defer func() {
+			err = chmod(dir, CreateDirPerm)
+			if err != nil {
+				t.Fatal("error updating permission", err)
+			}
+		}()
+
+		err = f.Rename(oldFilePath, newFilePath)
+		if err == nil {
+			t.Fatal("don't have permission, must be error")
+		}
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
+		}
+	})
+
+	t.Run("dir_permissions_src", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_dir_permissions_src")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldPath := filepath.Join(dir, "old_dir_permissions")
+		newPath := filepath.Join(dir, "new_dir_permissions")
+
+		f := New()
+		err = f.CreateFolder(oldPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Forbid writing
+		err = chmod(dir, 0000)
+		if err != nil {
+			t.Fatal("error updating permission", err)
+		}
+		defer func() {
+			err = chmod(dir, CreateDirPerm)
+			if err != nil {
+				t.Fatal("error updating permission", err)
+			}
+		}()
+
+		err = f.Rename(oldPath, newPath)
+		if err == nil {
+			t.Fatal("don't have permission, must be error")
+		}
+		if !errors.Is(err, fs.ErrorPermission) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorPermission, err)
+		}
+	})
+
+	// Old file just remove new and replace it
+	t.Run("file_file_exist", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_file_file_exist")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_file_permissions")
+		newFilePath := filepath.Join(dir, "new_file_permissions")
+
+		f := New()
+		err = f.CreateFile(oldFilePath, []byte("hello"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = f.CreateFile(newFilePath, []byte("hello"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = f.Rename(oldFilePath, newFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("file_folder_exist", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_file_folder_exist")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_file_permissions")
+		newFilePath := filepath.Join(dir, "new_file_permissions")
+
+		f := New()
+		err = f.CreateFile(oldFilePath, []byte("hello"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = f.CreateFolder(newFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = f.Rename(oldFilePath, newFilePath)
+		if err == nil {
+			t.Fatal("folder already exist, must be error")
+		}
+		if !errors.Is(err, fs.ErrorExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorExist, err)
+		}
+	})
+
+	t.Run("folder_folder_exist", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_folder_folder_exist")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_file_permissions")
+		newFilePath := filepath.Join(dir, "new_file_permissions")
+
+		f := New()
+		err = f.CreateFolder(oldFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = f.CreateFolder(newFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = f.Rename(oldFilePath, newFilePath)
+		if err == nil {
+			t.Fatal("folder already exist, must be error")
+		}
+		if !errors.Is(err, fs.ErrorExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorExist, err)
+		}
+	})
+
+	t.Run("folder_file_exist", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "rename_folder_file_exist")
+		if err != nil {
+			t.Fatal("error creating temp dir", err)
+		}
+		defer os.RemoveAll(dir)
+
+		oldFilePath := filepath.Join(dir, "old_file_permissions")
+		newFilePath := filepath.Join(dir, "new_file_permissions")
+
+		f := New()
+		err = f.CreateFolder(oldFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = f.CreateFile(newFilePath, []byte("hello"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = f.Rename(oldFilePath, newFilePath)
+		if err == nil {
+			t.Fatal("folder already exist, must be error")
+		}
+		if !errors.Is(err, fs.ErrorExist) {
+			t.Fatalf("error wait: %q; got: %q", fs.ErrorExist, err)
 		}
 	})
 }

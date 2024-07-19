@@ -260,7 +260,25 @@ func (r FS) RemoveFolder(path string) error {
 func (r FS) Rename(oldPath, newPath string) error {
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
-		// TODO: process different types of errors
+		var linkErr *os.LinkError
+		if errors.As(err, &linkErr) {
+			switch {
+			case os.IsExist(linkErr):
+				return fs.ErrorExist
+			case os.IsNotExist(linkErr):
+				return fs.ErrorNotExist
+			case os.IsPermission(linkErr):
+				return fs.ErrorPermission
+			}
+		}
+		var syscallErr syscall.Errno
+		if errors.As(err, &syscallErr) {
+			switch uintptr(syscallErr) {
+			case 20:
+				// Folder try to rename to exist file
+				return fs.ErrorExist
+			}
+		}
 		log.Printf("fs.Rename() os.Rename: %T %s", err, err.Error())
 		return fs.ErrorInternal
 	}

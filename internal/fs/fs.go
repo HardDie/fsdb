@@ -22,6 +22,7 @@ type FS interface {
 
 var (
 	ErrorBadPath        = errors.New("bad path")
+	ErrorExist          = errors.New("file or folder already exist")
 	ErrorNotExist       = errors.New("file or folder not exist")
 	ErrorPermission     = errors.New("not enough permissions")
 	ErrorFileExist      = errors.New("file already exist")

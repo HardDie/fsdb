@@ -3,10 +3,9 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/HardDie/fsentry/pkg/fsentry_error"
 )
 
 const (
@@ -71,7 +70,7 @@ func StructToJSON[T any](val T, isPretty bool) ([]byte, error) {
 	}
 	err := enc.Encode(val)
 	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return nil, fmt.Errorf("StructToJSON() enc.Encode: %w", err)
 	}
 	return dataJson.Bytes(), nil
 }
@@ -79,7 +78,7 @@ func JSONToStruct[T any](data []byte) (*T, error) {
 	var res T
 	err := json.Unmarshal(data, &res)
 	if err != nil {
-		return nil, fsentry_error.Wrap(err, fsentry_error.ErrorInternal)
+		return nil, fmt.Errorf("JSONToStruct() json.Unmarshal: %w", err)
 	}
 	return &res, nil
 }
